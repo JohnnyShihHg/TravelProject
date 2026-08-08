@@ -5,6 +5,10 @@ const links = [
   { label: '關於無穹', to: '/about' },
   { label: '聯絡我們', to: '/contact' }
 ]
+
+const mobileOpen = ref(false)
+const route = useRoute()
+watch(() => route.fullPath, () => { mobileOpen.value = false })
 </script>
 
 <template>
@@ -25,6 +29,26 @@ const links = [
           {{ link.label }}
         </NuxtLink>
       </nav>
+
+      <UButton
+        icon="i-lucide-menu"
+        color="neutral"
+        variant="ghost"
+        class="md:hidden"
+        aria-label="開啟選單"
+        @click="mobileOpen = !mobileOpen"
+      />
     </div>
+
+    <nav v-if="mobileOpen" class="border-t border-gray-100 bg-white px-4 py-3 md:hidden">
+      <NuxtLink
+        v-for="link in links"
+        :key="link.label"
+        :to="link.to"
+        class="block py-2 text-sm font-medium text-gray-600 hover:text-primary"
+      >
+        {{ link.label }}
+      </NuxtLink>
+    </nav>
   </header>
 </template>

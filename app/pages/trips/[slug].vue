@@ -15,8 +15,6 @@ const gallery = computed(() => trip.value?.images.filter(i => !i.isCover) ?? [])
 
 <template>
   <div v-if="trip">
-    <AppHeader />
-
     <div class="relative h-72 overflow-hidden sm:h-96">
       <img v-if="trip.coverImageUrl" :src="trip.coverImageUrl" :alt="trip.title" class="size-full object-cover">
       <div class="absolute inset-0 bg-black/30" />

@@ -39,8 +39,6 @@ async function submit() {
 
 <template>
   <div>
-    <AppHeader />
-
     <div class="relative h-56 overflow-hidden sm:h-64">
       <img src="https://picsum.photos/seed/contact-hero/1600/700" alt="聯絡無穹旅行社" class="size-full object-cover">
       <div class="absolute inset-0 bg-black/30" />

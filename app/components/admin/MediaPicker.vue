@@ -64,10 +64,10 @@ async function removeImage(imageId: number) {
             封面
           </UBadge>
           <div class="absolute inset-x-0 bottom-0 flex gap-1 bg-black/50 p-1 opacity-0 transition-opacity group-hover:opacity-100">
-            <UButton size="2xs" color="neutral" variant="solid" @click="setCover(img.mediaId)">
+            <UButton size="xs" color="neutral" variant="solid" @click="setCover(img.mediaId)">
               設為封面
             </UButton>
-            <UButton size="2xs" color="error" variant="solid" @click="removeImage(img.id)">
+            <UButton size="xs" color="error" variant="solid" @click="removeImage(img.id)">
               移除
             </UButton>
           </div>

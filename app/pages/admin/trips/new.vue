@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { TripTag } from '~/types/trip'
 
+definePageMeta({ layout: 'admin' })
+
 const router = useRouter()
 const { data: allTags } = await useFetch<TripTag[]>('/api/tags')
 

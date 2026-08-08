@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { TripDetail, TripTag, TripBatch } from '~/types/trip'
 
+definePageMeta({ layout: 'admin' })
+
 const route = useRoute()
 const id = Number(route.params.id)
 

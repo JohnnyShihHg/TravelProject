@@ -44,6 +44,7 @@
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.122",
     "@types/better-sqlite3": "^9.6.0",
-    "drizzle-kit": "^0.31.10"
+    "drizzle-kit": "^0.31.10",
+    "vue-tsc": "^3.3.9"
   }
 }

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { TripSummary } from '~/types/trip'
 
+definePageMeta({ layout: 'admin' })
+
 const { data: trips, refresh } = await useFetch<TripSummary[]>('/api/admin/trips')
 
 async function togglePublish(trip: TripSummary) {
@@ -28,6 +30,9 @@ async function remove(trip: TripSummary) {
         </p>
       </div>
       <div class="flex gap-2">
+        <UButton to="/admin/contacts" color="neutral" variant="soft">
+          聯絡表單留言
+        </UButton>
         <UButton to="/admin/hero" color="neutral" variant="soft">
           編輯首頁 Hero
         </UButton>

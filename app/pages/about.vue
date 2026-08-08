@@ -4,8 +4,6 @@ useSeoMeta({ title: '關於無穹 - 無穹旅行社' })
 
 <template>
   <div>
-    <AppHeader />
-
     <div class="relative h-64 overflow-hidden sm:h-80">
       <img
         src="https://picsum.photos/seed/about-hero/1600/900"

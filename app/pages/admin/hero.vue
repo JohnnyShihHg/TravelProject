@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { HeroContent } from '~/types/trip'
 
+definePageMeta({ layout: 'admin' })
+
 const { data: hero } = await useFetch<HeroContent>('/api/hero')
 
 const form = reactive({

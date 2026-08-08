@@ -8,7 +8,10 @@
 - 單人旅行社，無多人協作/多帳號問題
 - 品牌全名：**無穹旅行社**（正式品牌名，不要改成別的字）
 
-## 現況（2026-08-08 掃描）
+## 實作進度（2026-08-08）
+本地 SQLite 版本 prototype 已建置完成（trips/batches/tags/media/contact_submissions/hero_content + seed 假資料 + 前台五頁 + 後台 CRUD，含 `app/layouts/default.vue`＋`AppHeader`/`AppFooter`、`app/layouts/admin.vue`）。**尚未接上真的 Cloudflare（Worker/D1/R2/Zero Trust）**，`/admin` 目前完全沒有登入驗證，正式部署前必須補上。下方「現況（2026-08-08 掃描）」為建置前的骨架快照，僅供歷史參考。
+
+## 現況（2026-08-08 掃描，建置前快照）
 `G:\travel\TravelProject` 目前是幾乎空的 Nuxt 4 骨架：
 - Nuxt `^4.5.2` + Vue 3.5 + TypeScript + Tailwind CSS 4
 - 已裝：`@nuxt/ui` v4、`@nuxt/image`、`@nuxt/icon`、`@nuxt/fonts`、`@nuxt/eslint`、完整一套 `@tiptap/*`（後台富文本編輯器用）
@@ -52,6 +55,13 @@
 - 編輯行程（含 tiptap 富文本、media 媒體庫選圖）
 - 出團日曆調整（管理 batch：日期、班機、集合地點、費用說明、成團人數）
 - 編輯首頁 Hero
+
+## 待確認（新增，尚未實作）
+- **行程瀏覽紀錄**：使用者想記錄訪客點過/查看過哪些行程（例如用於之後分析熱門行程、或做「最近瀏覽」功能）。目前完全沒有這塊機制。待確認的問題：
+  - 目的是什麼？單純統計每個行程的瀏覽次數（trips 表加 view_count 即可），還是要看「同一個人看過哪些行程」（需要匿名訪客識別，例如 cookie/localStorage 存的 session id，沒有會員系統的情況下如何界定「同一人」）？
+  - 要不要影響「當前熱門」的精選邏輯（目前 is_featured 是後台手動選的，之後會不會想改成依瀏覽量自動排序，或兩者併存）？
+  - 資料保留多久、要不要做成後台可查看的報表？
+  - 這件事還沒跟使用者 grill 過，之後要另外討論再決定資料表設計與實作方式。
 
 ## 相關舊專案（僅供技術棧參考，非同一個網站）
 - `G:\PageWorker`：Cloudflare Worker + D1，攝影作品集網站（zhendoku.com）後端，架構可參考（分類/相簿/照片/標籤/批次刪除的實作模式），但資料模型跟旅行社無關，不要混用同一個 D1。
