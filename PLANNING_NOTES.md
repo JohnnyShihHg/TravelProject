@@ -2,6 +2,14 @@
 
 > 2026-08-08 完成 grill 逼問，以下為最終確認設計，可作為實作依據。
 
+## 📝 待辦（下次處理，接續 2026-08-08 進度）
+- [ ] **驗證 `/admin` RWD 修正**：2026-08-08 把後台所有橫向擠壓的排版改成手機寬度向下堆疊、已部署上測試站，但當時瀏覽器自動化工具的視窗縮放在這個環境沒生效，沒能實際截圖確認窄螢幕（iPhone 17 基礎版寬度 ~390-400px）畫面。**麻煩用手機或瀏覽器開發者工具的裝置模擬實際打開 `/admin` 檢查**，有問題再告訴我要調整哪個畫面
+- [ ] **`/admin` 還是完全沒有登入驗證**：講了好幾次的 Cloudflare Access（Zero Trust）一直沒做，測試站目前任何人知道網址都能進後台改資料。等客戶決定要正式使用前一定要補
+- [ ] **自訂網域**：目前測試站是 `wuqiong-travel.nadia861130.workers.dev` 免費子網域，正式上線需要客戶提供他自己的網域（要先加進他的 Cloudflare 帳號）
+- [ ] **Telegram 通知沒真的串接**：聯絡表單送出後目前只是存 D1、沒有真的發 Telegram 訊息通知（`server/api/contact.post.ts` 裡有寫好串接邏輯，只是沒設定 `telegramBotToken`/`telegramChatId`）
+- [ ] **行程瀏覽紀錄功能**：使用者提過想記錄訪客看過哪些行程，細節還沒 grill 過，詳見下方「待確認」章節
+- [ ] **目前 6 筆行程都是假資料**（我編的示範內容），正式上線前要換成客戶真實的行程資料，圖片也要換成真的照片（現在種子資料的圖是 picsum.photos 隨機圖）
+
 ## ⚠️ 部署帳號注意事項（2026-08-08）
 這個網站是幫**客戶**做的，正式/測試環境都必須部署到**客戶自己的 Cloudflare 帳號**，不是開發者（johnny.shih1997@gmail.com）自己的帳號。
 2026-08-08 曾經誤用開發者自己登入的 wrangler session 建立過一個測試用 Worker（`wuqiong-travel-test`）與 D1 資料庫（`travelproject-test`），事後已經完整刪除（`wrangler delete` + `wrangler d1 delete`，並確認帳號上沒有殘留）。
@@ -20,7 +28,8 @@
 - D1 資料庫：`wuqiong-travel`（id `a16f9442-c457-4ef8-b9d6-e082ae7b6efb`），schema 見 `server/database/migrations/0000_init.sql`，測試假資料見 `0001_seed.sql`（從本機 SQLite 假資料匯出）
 - `wrangler.jsonc` 裡 `assets.run_worker_first: true` 是必要設定——沒設的話 Cloudflare 的靜態資源會攔截掉所有非首頁的 SSR 路由（`/about`、`/trips/[slug]` 等會變成 404，因為請求根本不會轉給 Worker 處理）
 - `/admin` 目前依然完全沒有登入驗證，這是測試站，之後如果要給客戶正式使用一定要補 Cloudflare Access
-- R2（真的圖片上傳）還沒接，媒體庫還是用假圖網址
+- **R2 + Images binding 已接上**（2026-08-09）：`wuqiong-travel-media` bucket + `images` binding，後台上傳照片會真的壓縮（縮到最大寬 1600px、轉 webp、quality 75）存進 R2；本機開發沒有這些 binding，上傳會存到本機磁碟 `.data/uploads` 不壓縮，純供本機預覽用
+- 後台已補上手機寬度 RWD（2026-08-09），見上方待辦第一項，還沒實機驗證過
 
 ## 基礎設施
 - Cloudflare 全家桶：Worker（後端 API）+ Pages（前端，這個 repo 是 Nuxt 4）+ R2（媒體）+ D1（資料庫）
