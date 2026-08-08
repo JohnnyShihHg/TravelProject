@@ -15,5 +15,10 @@ export default defineNuxtConfig({
 
   ui: {
     colorMode: false
+  },
+
+  runtimeConfig: {
+    telegramBotToken: '',
+    telegramChatId: ''
   }
 })

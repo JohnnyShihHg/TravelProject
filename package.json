@@ -32,6 +32,8 @@
     "@tiptap/starter-kit": "^3.29.2",
     "@tiptap/suggestion": "^3.29.2",
     "@tiptap/vue-3": "^3.29.2",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.45.2",
     "eslint": "^10.8.1",
     "nuxt": "^4.5.2",
     "tailwindcss": "^4.3.3",
@@ -40,6 +42,8 @@
     "vue-router": "^5.2.0"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.122"
+    "@iconify-json/lucide": "^1.2.122",
+    "@types/better-sqlite3": "^9.6.0",
+    "drizzle-kit": "^0.31.10"
   }
 }
