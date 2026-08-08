@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { db } from '../../../utils/db'
+import { getDB } from '../../../utils/db'
 import { trips, tripTags, tags } from '../../../database/schema'
 import { enrichTripDetail } from '../../../utils/trips'
 
@@ -17,7 +17,8 @@ export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
   const body = await readBody<UpdateTripBody>(event)
 
-  const existing = db.select().from(trips).where(eq(trips.id, id)).get()
+  const db = getDB(event)
+  const existing = await db.select().from(trips).where(eq(trips.id, id)).get()
   if (!existing) throw createError({ statusCode: 404, statusMessage: '找不到行程' })
 
   const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() }
@@ -28,16 +29,16 @@ export default defineEventHandler(async (event) => {
   if (body.isFeatured !== undefined) updates.isFeatured = body.isFeatured
   if (body.rank !== undefined) updates.rank = body.rank
 
-  db.update(trips).set(updates).where(eq(trips.id, id)).run()
+  await db.update(trips).set(updates).where(eq(trips.id, id)).run()
 
   if (body.tagNames !== undefined) {
-    db.delete(tripTags).where(eq(tripTags.tripId, id)).run()
+    await db.delete(tripTags).where(eq(tripTags.tripId, id)).run()
     for (const name of body.tagNames) {
-      const tag = db.select().from(tags).where(eq(tags.name, name)).get()
-      if (tag) db.insert(tripTags).values({ tripId: id, tagId: tag.id }).run()
+      const tag = await db.select().from(tags).where(eq(tags.name, name)).get()
+      if (tag) await db.insert(tripTags).values({ tripId: id, tagId: tag.id }).run()
     }
   }
 
-  const updated = db.select().from(trips).where(eq(trips.id, id)).get()!
-  return enrichTripDetail(updated)
+  const updated = (await db.select().from(trips).where(eq(trips.id, id)).get())!
+  return enrichTripDetail(db, updated)
 })

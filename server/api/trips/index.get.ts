@@ -1,12 +1,14 @@
+import { getDB } from '../../utils/db'
 import { listPublishedTrips, getTripSearchText } from '../../utils/trips'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
+  const db = getDB(event)
   const query = getQuery(event)
   const q = typeof query.q === 'string' ? query.q.trim() : ''
   const tagFilter = typeof query.tag === 'string' ? query.tag.trim() : ''
   const featuredOnly = query.featured === '1' || query.featured === 'true'
 
-  let items = listPublishedTrips()
+  let items = await listPublishedTrips(db)
 
   if (featuredOnly) {
     items = items.filter(t => t.isFeatured)
@@ -18,10 +20,11 @@ export default defineEventHandler((event) => {
 
   if (q) {
     const needle = q.toLowerCase()
-    items = items.filter((t) => {
+    const searchTexts = await Promise.all(items.map(t => getTripSearchText(db, t.id)))
+    items = items.filter((t, i) => {
       const tagMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle))
       if (tagMatch) return true
-      const textMatch = `${t.title} ${t.summary} ${getTripSearchText(t.id)}`.toLowerCase().includes(needle)
+      const textMatch = `${t.title} ${t.summary} ${searchTexts[i]}`.toLowerCase().includes(needle)
       return textMatch
     })
   }

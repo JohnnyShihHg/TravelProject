@@ -1,9 +1,10 @@
 import { eq } from 'drizzle-orm'
-import { db } from '../../../utils/db'
+import { getDB } from '../../../utils/db'
 import { contentSnippets } from '../../../database/schema'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
-  db.delete(contentSnippets).where(eq(contentSnippets.id, id)).run()
+  const db = getDB(event)
+  await db.delete(contentSnippets).where(eq(contentSnippets.id, id)).run()
   return { ok: true }
 })

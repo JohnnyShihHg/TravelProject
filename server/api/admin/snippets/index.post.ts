@@ -1,4 +1,4 @@
-import { db } from '../../../utils/db'
+import { getDB } from '../../../utils/db'
 import { contentSnippets, CONTENT_BLOCK_TYPES } from '../../../database/schema'
 import type { ContentBlockType } from '../../../database/schema'
 
@@ -14,7 +14,8 @@ export default defineEventHandler(async (event) => {
   if (!body.name?.trim()) throw createError({ statusCode: 400, statusMessage: '請填寫範本名稱' })
   if (!CONTENT_BLOCK_TYPES.includes(body.type)) throw createError({ statusCode: 400, statusMessage: '不支援的區塊類型' })
 
-  const row = db.insert(contentSnippets).values({
+  const db = getDB(event)
+  const row = await db.insert(contentSnippets).values({
     name: body.name.trim(),
     type: body.type,
     data: JSON.stringify(body.data)

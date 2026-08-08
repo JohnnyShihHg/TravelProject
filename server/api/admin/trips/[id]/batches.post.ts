@@ -1,4 +1,4 @@
-import { db } from '../../../../utils/db'
+import { getDB } from '../../../../utils/db'
 import { batches } from '../../../../database/schema'
 
 interface CreateBatchBody {
@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: '請填寫出發日期與回程日期' })
   }
 
+  const db = getDB(event)
   return db.insert(batches).values({
     tripId,
     departureDate: body.departureDate,

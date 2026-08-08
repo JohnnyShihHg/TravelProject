@@ -1,6 +1,6 @@
-import { db } from '../../../utils/db'
-import { trips, tripTags, tags } from '../../../database/schema'
 import { eq } from 'drizzle-orm'
+import { getDB } from '../../../utils/db'
+import { trips, tripTags, tags } from '../../../database/schema'
 
 interface CreateTripBody {
   slug?: string
@@ -22,11 +22,12 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<CreateTripBody>(event)
   if (!body.title?.trim()) throw createError({ statusCode: 400, statusMessage: '請填寫行程標題' })
 
+  const db = getDB(event)
   const slug = body.slug?.trim() || slugify(body.title)
-  const existing = db.select().from(trips).where(eq(trips.slug, slug)).get()
+  const existing = await db.select().from(trips).where(eq(trips.slug, slug)).get()
   if (existing) throw createError({ statusCode: 409, statusMessage: '這個網址代稱（slug）已經被使用' })
 
-  const trip = db.insert(trips).values({
+  const trip = await db.insert(trips).values({
     slug,
     title: body.title.trim(),
     summary: body.summary?.trim() || '',
@@ -37,8 +38,8 @@ export default defineEventHandler(async (event) => {
   }).returning().get()
 
   for (const name of body.tagNames ?? []) {
-    const tag = db.select().from(tags).where(eq(tags.name, name)).get()
-    if (tag) db.insert(tripTags).values({ tripId: trip.id, tagId: tag.id }).run()
+    const tag = await db.select().from(tags).where(eq(tags.name, name)).get()
+    if (tag) await db.insert(tripTags).values({ tripId: trip.id, tagId: tag.id }).run()
   }
 
   return trip

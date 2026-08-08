@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { db } from '../../../../utils/db'
+import { getDB } from '../../../../utils/db'
 import { contentBlocks, CONTENT_BLOCK_TYPES } from '../../../../database/schema'
 import type { ContentBlockType } from '../../../../database/schema'
 import { defaultBlockData } from '../../../../utils/content-blocks'
@@ -17,10 +17,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: '不支援的區塊類型' })
   }
 
-  const existingBlocks = db.select().from(contentBlocks).where(eq(contentBlocks.tripId, tripId)).all()
+  const db = getDB(event)
+  const existingBlocks = await db.select().from(contentBlocks).where(eq(contentBlocks.tripId, tripId)).all()
   const maxSort = existingBlocks.reduce((max, b) => Math.max(max, b.sortOrder), -1)
 
-  const row = db.insert(contentBlocks).values({
+  const row = await db.insert(contentBlocks).values({
     tripId,
     type: body.type,
     sortOrder: maxSort + 1,

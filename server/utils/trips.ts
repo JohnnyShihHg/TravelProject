@@ -1,9 +1,9 @@
 import { eq, asc } from 'drizzle-orm'
-import { db } from './db'
+import type { DB } from './db'
 import { trips, batches, tags, tripTags, media, tripImages, contentBlocks } from '../database/schema'
 import { parseBlockData } from './content-blocks'
 
-export function getTripTags(tripId: number) {
+export async function getTripTags(db: DB, tripId: number) {
   return db
     .select({ id: tags.id, name: tags.name, category: tags.category })
     .from(tripTags)
@@ -12,7 +12,7 @@ export function getTripTags(tripId: number) {
     .all()
 }
 
-export function getTripBatches(tripId: number) {
+export async function getTripBatches(db: DB, tripId: number) {
   return db
     .select()
     .from(batches)
@@ -21,7 +21,7 @@ export function getTripBatches(tripId: number) {
     .all()
 }
 
-export function getTripImages(tripId: number) {
+export async function getTripImages(db: DB, tripId: number) {
   return db
     .select({
       id: tripImages.id,
@@ -38,20 +38,22 @@ export function getTripImages(tripId: number) {
     .all()
 }
 
-export function getTripBlocks(tripId: number) {
-  return db
+export async function getTripBlocks(db: DB, tripId: number) {
+  const rows = await db
     .select()
     .from(contentBlocks)
     .where(eq(contentBlocks.tripId, tripId))
     .orderBy(asc(contentBlocks.sortOrder))
     .all()
-    .map(row => ({ ...row, data: parseBlockData(row.data) }))
+  return rows.map(row => ({ ...row, data: parseBlockData(row.data) }))
 }
 
-export function enrichTrip(trip: typeof trips.$inferSelect) {
-  const tripTagList = getTripTags(trip.id)
-  const tripBatches = getTripBatches(trip.id)
-  const images = getTripImages(trip.id)
+export async function enrichTrip(db: DB, trip: typeof trips.$inferSelect) {
+  const [tripTagList, tripBatches, images] = await Promise.all([
+    getTripTags(db, trip.id),
+    getTripBatches(db, trip.id),
+    getTripImages(db, trip.id)
+  ])
   const cover = images.find(i => i.isCover) ?? images[0] ?? null
   const today = new Date().toISOString().slice(0, 10)
   const nextBatch = tripBatches.find(b => b.departureDate >= today) ?? null
@@ -66,24 +68,25 @@ export function enrichTrip(trip: typeof trips.$inferSelect) {
   }
 }
 
-export function enrichTripDetail(trip: typeof trips.$inferSelect) {
-  return {
-    ...enrichTrip(trip),
-    blocks: getTripBlocks(trip.id)
-  }
+export async function enrichTripDetail(db: DB, trip: typeof trips.$inferSelect) {
+  const [summary, blocks] = await Promise.all([
+    enrichTrip(db, trip),
+    getTripBlocks(db, trip.id)
+  ])
+  return { ...summary, blocks }
 }
 
-export function listPublishedTrips() {
-  const rows = db.select().from(trips).where(eq(trips.status, 'published')).all()
-  return rows.map(enrichTrip)
+export async function listPublishedTrips(db: DB) {
+  const rows = await db.select().from(trips).where(eq(trips.status, 'published')).all()
+  return Promise.all(rows.map(trip => enrichTrip(db, trip)))
 }
 
 function stripHtml(html: string) {
   return html.replace(/<[^>]*>/g, ' ')
 }
 
-export function getTripSearchText(tripId: number) {
-  const blocks = getTripBlocks(tripId)
+export async function getTripSearchText(db: DB, tripId: number) {
+  const blocks = await getTripBlocks(db, tripId)
   return blocks.map((block) => {
     if (block.type === 'richtext' || block.type === 'highlights') {
       return stripHtml((block.data as { html: string }).html)

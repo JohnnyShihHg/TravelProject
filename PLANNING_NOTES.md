@@ -2,6 +2,11 @@
 
 > 2026-08-08 完成 grill 逼問，以下為最終確認設計，可作為實作依據。
 
+## ⚠️ 部署帳號注意事項（2026-08-08）
+這個網站是幫**客戶**做的，正式/測試環境都必須部署到**客戶自己的 Cloudflare 帳號**，不是開發者（johnny.shih1997@gmail.com）自己的帳號。
+2026-08-08 曾經誤用開發者自己登入的 wrangler session 建立過一個測試用 Worker（`wuqiong-travel-test`）與 D1 資料庫（`travelproject-test`），事後已經完整刪除（`wrangler delete` + `wrangler d1 delete`，並確認帳號上沒有殘留）。
+**之後任何 `wrangler deploy` / `wrangler d1 create` 之類會建立雲端資源的指令，動手前一定要先確認目前 wrangler 登入的是客戶的帳號，不是開發者自己的帳號**（用 `wrangler whoami` 確認）。
+
 ## 基礎設施
 - Cloudflare 全家桶：Worker（後端 API）+ Pages（前端，這個 repo 是 Nuxt 4）+ R2（媒體）+ D1（資料庫）
 - **純展示型網站，無金流、無報名/成團機制**（batch 上的成團人數/費用僅供顯示參考，不做庫存扣減或線上付款）

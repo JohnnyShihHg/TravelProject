@@ -1,4 +1,4 @@
-import { db } from '../utils/db'
+import { getDB } from '../utils/db'
 import { trips, batches, tags, tripTags, media, tripImages, contactSubmissions, heroContent, contentBlocks, contentSnippets } from './schema'
 import type { ContentBlockType } from './schema'
 import { eq } from 'drizzle-orm'
@@ -210,18 +210,19 @@ const SNIPPETS: { name: string, type: ContentBlockType, data: BlockData }[] = [
   }
 ]
 
-export function seed() {
-  const existing = db.select().from(trips).limit(1).all()
+export async function seed() {
+  const db = getDB()
+  const existing = await db.select().from(trips).limit(1).all()
   if (existing.length > 0) return
 
   const tagIdByName = new Map<string, number>()
   for (const t of TAGS) {
-    const row = db.insert(tags).values(t).returning().get()
+    const row = await db.insert(tags).values(t).returning().get()
     tagIdByName.set(t.name, row.id)
   }
 
   for (const trip of TRIPS) {
-    const tripRow = db.insert(trips).values({
+    const tripRow = await db.insert(trips).values({
       slug: trip.slug,
       title: trip.title,
       summary: trip.summary,
@@ -233,55 +234,55 @@ export function seed() {
 
     for (const name of trip.tagNames) {
       const tagId = tagIdByName.get(name)
-      if (tagId) db.insert(tripTags).values({ tripId: tripRow.id, tagId }).run()
+      if (tagId) await db.insert(tripTags).values({ tripId: tripRow.id, tagId }).run()
     }
 
     for (const batch of trip.batches) {
-      db.insert(batches).values({ tripId: tripRow.id, ...batch }).run()
+      await db.insert(batches).values({ tripId: tripRow.id, ...batch }).run()
     }
 
-    trip.blocks.forEach((block, index) => {
-      db.insert(contentBlocks).values({
+    for (const [index, block] of trip.blocks.entries()) {
+      await db.insert(contentBlocks).values({
         tripId: tripRow.id,
         type: block.type,
         sortOrder: index,
         data: JSON.stringify(block.data)
       }).run()
-    })
+    }
 
     const coverSeed = trip.slug
-    const coverMedia = db.insert(media).values({
+    const coverMedia = await db.insert(media).values({
       r2Key: `trips/${trip.slug}/cover.jpg`,
       url: placeholderImage(coverSeed),
       category: trip.tagNames[0] ?? null
     }).returning().get()
-    db.insert(tripImages).values({ tripId: tripRow.id, mediaId: coverMedia.id, isCover: true, sortOrder: 0 }).run()
+    await db.insert(tripImages).values({ tripId: tripRow.id, mediaId: coverMedia.id, isCover: true, sortOrder: 0 }).run()
 
     for (let i = 1; i <= 3; i++) {
-      const galleryMedia = db.insert(media).values({
+      const galleryMedia = await db.insert(media).values({
         r2Key: `trips/${trip.slug}/gallery-${i}.jpg`,
         url: placeholderImage(`${coverSeed}-${i}`),
         category: trip.tagNames[0] ?? null
       }).returning().get()
-      db.insert(tripImages).values({ tripId: tripRow.id, mediaId: galleryMedia.id, isCover: false, sortOrder: i }).run()
+      await db.insert(tripImages).values({ tripId: tripRow.id, mediaId: galleryMedia.id, isCover: false, sortOrder: i }).run()
     }
   }
 
   for (const snippet of SNIPPETS) {
-    db.insert(contentSnippets).values({
+    await db.insert(contentSnippets).values({
       name: snippet.name,
       type: snippet.type,
       data: JSON.stringify(snippet.data)
     }).run()
   }
 
-  const firstTrip = db.select().from(trips).where(eq(trips.slug, 'tokyo-sakura-5days')).get()
-  db.insert(contactSubmissions).values([
+  const firstTrip = await db.select().from(trips).where(eq(trips.slug, 'tokyo-sakura-5days')).get()
+  await db.insert(contactSubmissions).values([
     { name: '陳小姐', phone: '0912-345-678', email: 'chen@example.com', interestedTripId: firstTrip?.id ?? null, message: '請問三月底的東京賞櫻團還有名額嗎？想幫爸媽報名兩位。' },
     { name: '林先生', phone: '0922-111-222', email: null, interestedTripId: null, message: '想詢問是否有規劃沖繩親子行程，預計明年暑假出發。' }
   ]).run()
 
-  db.insert(heroContent).values({
+  await db.insert(heroContent).values({
     title: '無穹旅行社',
     subtitle: '帶你走進每一段值得記住的旅程',
     imageUrl: placeholderImage('hero-main', 1920, 1080)

@@ -1,4 +1,4 @@
-import { db } from '../utils/db'
+import { getDB } from '../utils/db'
 import { contactSubmissions } from '../database/schema'
 
 interface ContactBody {
@@ -22,7 +22,8 @@ export default defineEventHandler(async (event) => {
   if (!message) throw createError({ statusCode: 400, statusMessage: '請填寫留言內容' })
   if (!phone && !email) throw createError({ statusCode: 400, statusMessage: '請至少填寫電話或 Email 其中一種聯絡方式' })
 
-  const submission = db.insert(contactSubmissions).values({
+  const db = getDB(event)
+  const submission = await db.insert(contactSubmissions).values({
     name,
     phone,
     email,

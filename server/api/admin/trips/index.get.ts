@@ -1,9 +1,10 @@
-import { db } from '../../../utils/db'
+import { desc } from 'drizzle-orm'
+import { getDB } from '../../../utils/db'
 import { trips } from '../../../database/schema'
 import { enrichTrip } from '../../../utils/trips'
-import { desc } from 'drizzle-orm'
 
-export default defineEventHandler(() => {
-  const rows = db.select().from(trips).orderBy(desc(trips.updatedAt)).all()
-  return rows.map(enrichTrip)
+export default defineEventHandler(async (event) => {
+  const db = getDB(event)
+  const rows = await db.select().from(trips).orderBy(desc(trips.updatedAt)).all()
+  return Promise.all(rows.map(trip => enrichTrip(db, trip)))
 })

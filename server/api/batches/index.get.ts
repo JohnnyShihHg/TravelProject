@@ -1,13 +1,14 @@
 import { eq } from 'drizzle-orm'
-import { db } from '../../utils/db'
+import { getDB } from '../../utils/db'
 import { trips, batches } from '../../database/schema'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const from = typeof query.from === 'string' ? query.from : undefined
   const to = typeof query.to === 'string' ? query.to : undefined
 
-  const rows = db
+  const db = getDB(event)
+  const rows = await db
     .select({
       batchId: batches.id,
       departureDate: batches.departureDate,

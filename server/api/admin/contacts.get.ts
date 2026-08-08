@@ -1,8 +1,9 @@
 import { desc, eq } from 'drizzle-orm'
-import { db } from '../../utils/db'
+import { getDB } from '../../utils/db'
 import { contactSubmissions, trips } from '../../database/schema'
 
-export default defineEventHandler(() => {
+export default defineEventHandler(async (event) => {
+  const db = getDB(event)
   return db
     .select({
       id: contactSubmissions.id,

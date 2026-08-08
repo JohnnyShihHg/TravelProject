@@ -21,4 +21,10 @@ export default defineNuxtConfig({
     telegramBotToken: '',
     telegramChatId: ''
   }
+
+  // Cloudflare preset (nitro.preset: 'cloudflare_module') is intentionally NOT set here.
+  // Setting it globally also makes `nuxt dev` run under Cloudflare's dev emulation, which
+  // can't load native modules like better-sqlite3 — breaking local dev. The preset is
+  // applied only at actual deploy-build time via the NITRO_PRESET env var (see package.json
+  // "deploy" script), never for everyday `nuxt dev` / `nuxt build`.
 })
