@@ -47,7 +47,6 @@ async function saveBlock(block: ContentBlock) {
   saving.value = block.id
   try {
     await $fetch(`/api/admin/blocks/${block.id}`, { method: 'PATCH', body: { data: drafts[block.id] } })
-    expandedId.value = null
     emit('refresh')
   } finally {
     saving.value = null

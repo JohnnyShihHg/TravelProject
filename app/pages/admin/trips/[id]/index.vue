@@ -110,6 +110,9 @@ async function removeBatch(batch: TripBatch) {
         <UBadge :color="trip.status === 'published' ? 'success' : 'neutral'" variant="subtle">
           {{ trip.status === 'published' ? '已發布' : '草稿' }}
         </UBadge>
+        <UButton :to="`/admin/trips/${id}/preview`" target="_blank" size="sm" color="neutral" variant="soft" icon="i-lucide-eye">
+          預覽整頁
+        </UButton>
         <UButton size="sm" color="neutral" variant="soft" @click="togglePublish">
           {{ trip.status === 'published' ? '設為草稿' : '發布' }}
         </UButton>
