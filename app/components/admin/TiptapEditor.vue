@@ -139,7 +139,7 @@ async function onFileSelected(e: Event) {
     </div>
 
     <div v-if="imagePanelOpen" class="border-b border-gray-200 p-3">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-2">
         <span class="text-xs text-gray-500">從媒體庫選一張插入內文</span>
         <UButton size="xs" color="primary" variant="soft" :loading="uploading" @click="pickFile">
           上傳照片

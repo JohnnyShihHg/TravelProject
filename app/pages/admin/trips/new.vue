@@ -86,8 +86,8 @@ async function create() {
             {{ tag.name }}
           </label>
         </div>
-        <div class="mt-3 flex items-center gap-2">
-          <UInput v-model="newTagName" size="xs" placeholder="新標籤名稱" class="w-40" @keyup.enter="createTag" />
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <UInput v-model="newTagName" size="xs" placeholder="新標籤名稱" class="w-full sm:w-40" @keyup.enter="createTag" />
           <USelect v-model="newTagCategory" size="xs" :items="tagCategoryOptions" class="w-28" />
           <UButton size="xs" color="neutral" variant="soft" :loading="creatingTag" @click="createTag">
             ＋新增標籤

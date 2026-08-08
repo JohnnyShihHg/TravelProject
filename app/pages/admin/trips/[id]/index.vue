@@ -102,11 +102,11 @@ async function removeBatch(batch: TripBatch) {
       返回後台
     </UButton>
 
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h1 class="text-2xl font-bold text-gray-900">
         編輯行程
       </h1>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <UBadge :color="trip.status === 'published' ? 'success' : 'neutral'" variant="subtle">
           {{ trip.status === 'published' ? '已發布' : '草稿' }}
         </UBadge>
@@ -136,8 +136,8 @@ async function removeBatch(batch: TripBatch) {
             {{ tag.name }}
           </label>
         </div>
-        <div class="mt-3 flex items-center gap-2">
-          <UInput v-model="newTagName" size="xs" placeholder="新標籤名稱" class="w-40" @keyup.enter="createTag" />
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <UInput v-model="newTagName" size="xs" placeholder="新標籤名稱" class="w-full sm:w-40" @keyup.enter="createTag" />
           <USelect v-model="newTagCategory" size="xs" :items="tagCategoryOptions" class="w-28" />
           <UButton size="xs" color="neutral" variant="soft" :loading="creatingTag" @click="createTag">
             ＋新增標籤
@@ -145,7 +145,7 @@ async function removeBatch(batch: TripBatch) {
         </div>
       </UFormField>
 
-      <div class="flex items-end gap-6">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-6">
         <UFormField label="首頁精選">
           <USwitch v-model="form.isFeatured" />
         </UFormField>
@@ -165,13 +165,13 @@ async function removeBatch(batch: TripBatch) {
         出團梯次
       </h2>
       <div v-if="trip.batches.length" class="mt-3 space-y-2">
-        <div v-for="batch in trip.batches" :key="batch.id" class="flex items-center justify-between rounded-lg border border-gray-100 px-4 py-2 text-sm">
+        <div v-for="batch in trip.batches" :key="batch.id" class="flex flex-col gap-2 rounded-lg border border-gray-100 px-4 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
             <span class="font-medium text-gray-900">{{ batch.departureDate }} ～ {{ batch.returnDate }}</span>
             <span class="ml-3 text-gray-500">{{ batch.priceInfo }}</span>
             <span v-if="batch.groupSize" class="ml-3 text-gray-500">成團人數 {{ batch.groupSize }}</span>
           </div>
-          <UButton size="xs" color="error" variant="soft" @click="removeBatch(batch)">
+          <UButton size="xs" color="error" variant="soft" class="self-start sm:self-auto" @click="removeBatch(batch)">
             刪除
           </UButton>
         </div>
@@ -180,7 +180,7 @@ async function removeBatch(batch: TripBatch) {
         尚無梯次
       </p>
 
-      <div class="mt-4 grid grid-cols-2 gap-2 rounded-lg border border-dashed border-gray-200 p-4 sm:grid-cols-3">
+      <div class="mt-4 grid grid-cols-1 gap-2 rounded-lg border border-dashed border-gray-200 p-4 sm:grid-cols-3">
         <UFormField label="出發日期">
           <UInput v-model="newBatch.departureDate" type="date" class="w-full" />
         </UFormField>
@@ -190,16 +190,16 @@ async function removeBatch(batch: TripBatch) {
         <UFormField label="成團人數">
           <UInput v-model.number="newBatch.groupSize" type="number" class="w-full" />
         </UFormField>
-        <UFormField label="班機資訊" class="col-span-2 sm:col-span-1">
+        <UFormField label="班機資訊">
           <UInput v-model="newBatch.flightInfo" class="w-full" />
         </UFormField>
-        <UFormField label="集合地點" class="col-span-2 sm:col-span-1">
+        <UFormField label="集合地點">
           <UInput v-model="newBatch.meetingPoint" class="w-full" />
         </UFormField>
-        <UFormField label="費用說明" class="col-span-2 sm:col-span-1">
+        <UFormField label="費用說明">
           <UInput v-model="newBatch.priceInfo" class="w-full" />
         </UFormField>
-        <UButton class="col-span-2 sm:col-span-3" color="neutral" variant="soft" :loading="addingBatch" @click="addBatch">
+        <UButton class="sm:col-span-3" color="neutral" variant="soft" :loading="addingBatch" @click="addBatch">
           新增梯次
         </UButton>
       </div>

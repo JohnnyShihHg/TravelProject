@@ -93,7 +93,7 @@ async function removeImage(imageId: number) {
     </div>
 
     <div>
-      <div class="flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-2">
         <h3 class="text-sm font-semibold text-gray-900">
           媒體庫（可依分類重複使用）
         </h3>

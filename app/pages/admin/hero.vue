@@ -47,9 +47,9 @@ function randomizeImage() {
         <UInput v-model="form.subtitle" class="w-full" />
       </UFormField>
       <UFormField label="背景圖片網址">
-        <div class="flex gap-2">
+        <div class="flex flex-col gap-2 sm:flex-row">
           <UInput v-model="form.imageUrl" class="w-full" />
-          <UButton color="neutral" variant="soft" @click="randomizeImage">
+          <UButton color="neutral" variant="soft" class="shrink-0" @click="randomizeImage">
             隨機換圖（假資料）
           </UButton>
         </div>

@@ -106,16 +106,18 @@ async function deleteSnippet(snippet: ContentSnippet) {
 <template>
   <div class="space-y-3">
     <div v-for="block in sortedBlocks" :key="block.id" class="rounded-lg border border-gray-200">
-      <div class="flex items-center gap-2 p-3">
+      <div class="flex flex-wrap items-center gap-2 p-3">
         <UIcon :name="BLOCK_LABELS[block.type].icon" class="size-4 shrink-0 text-primary" />
         <span class="shrink-0 text-xs font-semibold text-gray-900">{{ BLOCK_LABELS[block.type].label }}</span>
-        <span class="min-w-0 flex-1 truncate text-xs text-gray-400">{{ preview(block) }}</span>
-        <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-chevron-up" square @click="move(block, -1)" />
-        <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-chevron-down" square @click="move(block, 1)" />
-        <UButton size="xs" color="neutral" variant="ghost" :icon="expandedId === block.id ? 'i-lucide-chevron-up' : 'i-lucide-pencil'" @click="toggleExpand(block)">
-          {{ expandedId === block.id ? '收合' : '編輯' }}
-        </UButton>
-        <UButton size="xs" color="error" variant="ghost" icon="i-lucide-trash-2" square @click="removeBlock(block)" />
+        <span class="w-full min-w-0 text-xs text-gray-400 sm:w-auto sm:flex-1 sm:truncate">{{ preview(block) }}</span>
+        <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
+          <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-chevron-up" square @click="move(block, -1)" />
+          <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-chevron-down" square @click="move(block, 1)" />
+          <UButton size="xs" color="neutral" variant="ghost" :icon="expandedId === block.id ? 'i-lucide-chevron-up' : 'i-lucide-pencil'" @click="toggleExpand(block)">
+            {{ expandedId === block.id ? '收合' : '編輯' }}
+          </UButton>
+          <UButton size="xs" color="error" variant="ghost" icon="i-lucide-trash-2" square @click="removeBlock(block)" />
+        </div>
       </div>
 
       <div v-if="expandedId === block.id" class="border-t border-gray-100 p-3">
@@ -123,7 +125,7 @@ async function deleteSnippet(snippet: ContentSnippet) {
         <AdminBlockEditorFlight v-else-if="block.type === 'flight'" v-model="(drafts[block.id] as any)" />
         <AdminBlockEditorDailyItinerary v-else-if="block.type === 'daily_itinerary'" v-model="(drafts[block.id] as any)" />
 
-        <div class="mt-3 flex gap-2">
+        <div class="mt-3 flex flex-wrap gap-2">
           <UButton size="xs" color="primary" :loading="saving === block.id" @click="saveBlock(block)">
             儲存區塊
           </UButton>

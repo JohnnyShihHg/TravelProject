@@ -25,7 +25,7 @@ const { data: contacts } = await useFetch<ContactRow[]>('/api/admin/contacts')
 
     <div v-if="contacts?.length" class="mt-6 space-y-3">
       <div v-for="c in contacts" :key="c.id" class="rounded-xl border border-gray-100 p-4 shadow-sm">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <span class="font-medium text-gray-900">{{ c.name }}</span>
           <span class="text-xs text-gray-400">{{ c.createdAt }}</span>
         </div>

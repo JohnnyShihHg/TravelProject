@@ -39,7 +39,7 @@ function removeDay(index: number) {
 
       <AdminTiptapEditor :model-value="d.html" @update:model-value="(v) => updateDay(i, { html: v })" />
 
-      <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-4">
         <UInput :model-value="d.meals.breakfast" size="xs" placeholder="早餐" @update:model-value="(v) => updateMeals(i, { breakfast: String(v) })" />
         <UInput :model-value="d.meals.lunch" size="xs" placeholder="午餐" @update:model-value="(v) => updateMeals(i, { lunch: String(v) })" />
         <UInput :model-value="d.meals.dinner" size="xs" placeholder="晚餐" @update:model-value="(v) => updateMeals(i, { dinner: String(v) })" />

@@ -15,7 +15,7 @@ if (error.value) {
 
 <template>
   <div v-if="trip">
-    <div class="sticky top-16 z-40 flex items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm sm:px-6">
+    <div class="sticky top-16 z-40 flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm sm:px-6">
       <div class="flex items-center gap-2 text-amber-800">
         <UIcon name="i-lucide-eye" class="size-4" />
         <span class="font-medium">預覽模式</span>
