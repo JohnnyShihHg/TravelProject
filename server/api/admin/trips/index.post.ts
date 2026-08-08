@@ -6,7 +6,6 @@ interface CreateTripBody {
   slug?: string
   title: string
   summary: string
-  content: string
   days: number
   tagNames?: string[]
 }
@@ -31,7 +30,6 @@ export default defineEventHandler(async (event) => {
     slug,
     title: body.title.trim(),
     summary: body.summary?.trim() || '',
-    content: body.content || '',
     days: body.days || 1,
     status: 'draft',
     isFeatured: false,

@@ -36,7 +36,9 @@ const gallery = computed(() => trip.value?.images.filter(i => !i.isCover) ?? [])
           {{ trip.summary }}
         </p>
 
-        <div class="prose prose-sm mt-6 max-w-none" v-html="trip.content" />
+        <div class="mt-6">
+          <TripContentBlocks :blocks="trip.blocks" />
+        </div>
 
         <div v-if="gallery.length" class="mt-10">
           <h2 class="text-lg font-semibold text-gray-900">

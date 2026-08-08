@@ -1,8 +1,4 @@
-import { listPublishedTrips } from '../../utils/trips'
-
-function stripHtml(html: string) {
-  return html.replace(/<[^>]*>/g, '')
-}
+import { listPublishedTrips, getTripSearchText } from '../../utils/trips'
 
 export default defineEventHandler((event) => {
   const query = getQuery(event)
@@ -25,7 +21,7 @@ export default defineEventHandler((event) => {
     items = items.filter((t) => {
       const tagMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle))
       if (tagMatch) return true
-      const textMatch = `${t.title} ${t.summary} ${stripHtml(t.content)}`.toLowerCase().includes(needle)
+      const textMatch = `${t.title} ${t.summary} ${getTripSearchText(t.id)}`.toLowerCase().includes(needle)
       return textMatch
     })
   }
@@ -35,5 +31,5 @@ export default defineEventHandler((event) => {
     return a.title.localeCompare(b.title, 'zh-Hant')
   })
 
-  return items.map(({ content: _content, ...rest }) => rest)
+  return items
 })

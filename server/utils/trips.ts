@@ -1,6 +1,7 @@
 import { eq, asc } from 'drizzle-orm'
 import { db } from './db'
-import { trips, batches, tags, tripTags, media, tripImages } from '../database/schema'
+import { trips, batches, tags, tripTags, media, tripImages, contentBlocks } from '../database/schema'
+import { parseBlockData } from './content-blocks'
 
 export function getTripTags(tripId: number) {
   return db
@@ -37,6 +38,16 @@ export function getTripImages(tripId: number) {
     .all()
 }
 
+export function getTripBlocks(tripId: number) {
+  return db
+    .select()
+    .from(contentBlocks)
+    .where(eq(contentBlocks.tripId, tripId))
+    .orderBy(asc(contentBlocks.sortOrder))
+    .all()
+    .map(row => ({ ...row, data: parseBlockData(row.data) }))
+}
+
 export function enrichTrip(trip: typeof trips.$inferSelect) {
   const tripTagList = getTripTags(trip.id)
   const tripBatches = getTripBatches(trip.id)
@@ -55,7 +66,32 @@ export function enrichTrip(trip: typeof trips.$inferSelect) {
   }
 }
 
+export function enrichTripDetail(trip: typeof trips.$inferSelect) {
+  return {
+    ...enrichTrip(trip),
+    blocks: getTripBlocks(trip.id)
+  }
+}
+
 export function listPublishedTrips() {
   const rows = db.select().from(trips).where(eq(trips.status, 'published')).all()
   return rows.map(enrichTrip)
+}
+
+function stripHtml(html: string) {
+  return html.replace(/<[^>]*>/g, ' ')
+}
+
+export function getTripSearchText(tripId: number) {
+  const blocks = getTripBlocks(tripId)
+  return blocks.map((block) => {
+    if (block.type === 'richtext' || block.type === 'highlights') {
+      return stripHtml((block.data as { html: string }).html)
+    }
+    if (block.type === 'daily_itinerary') {
+      const data = block.data as { days: { title: string, html: string }[] }
+      return data.days.map(d => `${d.title} ${stripHtml(d.html)}`).join(' ')
+    }
+    return ''
+  }).join(' ')
 }

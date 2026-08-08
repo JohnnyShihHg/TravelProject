@@ -18,7 +18,6 @@ export function ensureSchema() {
       slug TEXT NOT NULL UNIQUE,
       title TEXT NOT NULL,
       summary TEXT NOT NULL,
-      content TEXT NOT NULL,
       days INTEGER NOT NULL,
       status TEXT NOT NULL DEFAULT 'draft',
       is_featured INTEGER NOT NULL DEFAULT 0,
@@ -64,6 +63,23 @@ export function ensureSchema() {
       media_id INTEGER NOT NULL REFERENCES media(id) ON DELETE CASCADE,
       is_cover INTEGER NOT NULL DEFAULT 0,
       sort_order INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS content_blocks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      data TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (current_timestamp)
+    );
+
+    CREATE TABLE IF NOT EXISTS content_snippets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      data TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (current_timestamp)
     );
 
     CREATE TABLE IF NOT EXISTS hero_content (

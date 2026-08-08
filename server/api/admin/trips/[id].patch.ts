@@ -1,12 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../../../utils/db'
 import { trips, tripTags, tags } from '../../../database/schema'
-import { enrichTrip } from '../../../utils/trips'
+import { enrichTripDetail } from '../../../utils/trips'
 
 interface UpdateTripBody {
   title?: string
   summary?: string
-  content?: string
   days?: number
   status?: 'draft' | 'published'
   isFeatured?: boolean
@@ -24,7 +23,6 @@ export default defineEventHandler(async (event) => {
   const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() }
   if (body.title !== undefined) updates.title = body.title.trim()
   if (body.summary !== undefined) updates.summary = body.summary
-  if (body.content !== undefined) updates.content = body.content
   if (body.days !== undefined) updates.days = body.days
   if (body.status !== undefined) updates.status = body.status
   if (body.isFeatured !== undefined) updates.isFeatured = body.isFeatured
@@ -41,5 +39,5 @@ export default defineEventHandler(async (event) => {
   }
 
   const updated = db.select().from(trips).where(eq(trips.id, id)).get()!
-  return enrichTrip(updated)
+  return enrichTripDetail(updated)
 })

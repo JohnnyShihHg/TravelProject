@@ -40,8 +40,60 @@ export interface TripSummary {
   nextBatch: TripBatch | null
 }
 
+export type ContentBlockType = 'richtext' | 'highlights' | 'flight' | 'daily_itinerary'
+
+export interface RichTextBlockData {
+  html: string
+}
+
+export interface FlightLeg {
+  label: string
+  date: string
+  airline: string
+  fromCode: string
+  fromName: string
+  toCode: string
+  toName: string
+  departTime: string
+  arriveTime: string
+  duration: string
+}
+
+export interface FlightBlockData {
+  legs: FlightLeg[]
+}
+
+export interface DailyItineraryDay {
+  day: number
+  title: string
+  html: string
+  meals: { breakfast: string, lunch: string, dinner: string }
+  hotel: string
+}
+
+export interface DailyItineraryBlockData {
+  days: DailyItineraryDay[]
+}
+
+export type BlockData = RichTextBlockData | FlightBlockData | DailyItineraryBlockData
+
+export interface ContentBlock {
+  id: number
+  tripId: number
+  type: ContentBlockType
+  sortOrder: number
+  data: BlockData
+}
+
+export interface ContentSnippet {
+  id: number
+  name: string
+  type: ContentBlockType
+  data: BlockData
+}
+
 export interface TripDetail extends TripSummary {
-  content: string
+  blocks: ContentBlock[]
 }
 
 export interface CalendarBatch {

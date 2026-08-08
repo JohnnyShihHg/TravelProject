@@ -7,13 +7,12 @@ const route = useRoute()
 const id = Number(route.params.id)
 
 const { data: trip, refresh } = await useFetch<TripDetail>(`/api/admin/trips/${id}`)
-const { data: allTags } = await useFetch<TripTag[]>('/api/tags')
+const { data: allTags, refresh: refreshTags } = await useFetch<TripTag[]>('/api/tags')
 
 const form = reactive({
   title: '',
   summary: '',
   days: 1,
-  content: '',
   tagNames: [] as string[],
   isFeatured: false,
   rank: 0
@@ -24,11 +23,34 @@ watchEffect(() => {
   form.title = trip.value.title
   form.summary = trip.value.summary
   form.days = trip.value.days
-  form.content = trip.value.content
   form.tagNames = trip.value.tags.map(t => t.name)
   form.isFeatured = trip.value.isFeatured
   form.rank = trip.value.rank
 })
+
+// 新增標籤
+const newTagName = ref('')
+const newTagCategory = ref<'location' | 'attraction' | 'type'>('type')
+const creatingTag = ref(false)
+const tagCategoryOptions = [
+  { label: '地點', value: 'location' },
+  { label: '景點', value: 'attraction' },
+  { label: '類型', value: 'type' }
+]
+
+async function createTag() {
+  const name = newTagName.value.trim()
+  if (!name) return
+  creatingTag.value = true
+  try {
+    const tag = await $fetch<TripTag>('/api/admin/tags', { method: 'POST', body: { name, category: newTagCategory.value } })
+    await refreshTags()
+    if (!form.tagNames.includes(tag.name)) form.tagNames.push(tag.name)
+    newTagName.value = ''
+  } finally {
+    creatingTag.value = false
+  }
+}
 
 const saving = ref(false)
 const saved = ref(false)
@@ -111,9 +133,13 @@ async function removeBatch(batch: TripBatch) {
             {{ tag.name }}
           </label>
         </div>
-      </UFormField>
-      <UFormField label="行程內容">
-        <AdminTiptapEditor v-model="form.content" />
+        <div class="mt-3 flex items-center gap-2">
+          <UInput v-model="newTagName" size="xs" placeholder="新標籤名稱" class="w-40" @keyup.enter="createTag" />
+          <USelect v-model="newTagCategory" size="xs" :items="tagCategoryOptions" class="w-28" />
+          <UButton size="xs" color="neutral" variant="soft" :loading="creatingTag" @click="createTag">
+            ＋新增標籤
+          </UButton>
+        </div>
       </UFormField>
 
       <div class="flex items-end gap-6">
@@ -173,6 +199,18 @@ async function removeBatch(batch: TripBatch) {
         <UButton class="col-span-2 sm:col-span-3" color="neutral" variant="soft" :loading="addingBatch" @click="addBatch">
           新增梯次
         </UButton>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="text-lg font-semibold text-gray-900">
+        行程內容
+      </h2>
+      <p class="mt-1 text-xs text-gray-400">
+        內容由區塊組成，每個區塊獨立編輯、獨立儲存；區塊也可以另存為範本，之後在其他行程重複使用（例如安全須知）。
+      </p>
+      <div class="mt-3">
+        <AdminContentBlockEditor :trip-id="id" :blocks="trip.blocks" @refresh="refresh" />
       </div>
     </section>
 

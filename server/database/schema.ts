@@ -6,7 +6,6 @@ export const trips = sqliteTable('trips', {
   slug: text('slug').notNull().unique(),
   title: text('title').notNull(),
   summary: text('summary').notNull(),
-  content: text('content').notNull(), // tiptap rich text (stored as HTML)
   days: integer('days').notNull(),
   status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
   isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
@@ -52,6 +51,26 @@ export const tripImages = sqliteTable('trip_images', {
   mediaId: integer('media_id').notNull().references(() => media.id, { onDelete: 'cascade' }),
   isCover: integer('is_cover', { mode: 'boolean' }).notNull().default(false),
   sortOrder: integer('sort_order').notNull().default(0)
+})
+
+export const CONTENT_BLOCK_TYPES = ['richtext', 'highlights', 'flight', 'daily_itinerary'] as const
+export type ContentBlockType = typeof CONTENT_BLOCK_TYPES[number]
+
+export const contentBlocks = sqliteTable('content_blocks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  tripId: integer('trip_id').notNull().references(() => trips.id, { onDelete: 'cascade' }),
+  type: text('type', { enum: CONTENT_BLOCK_TYPES }).notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  data: text('data').notNull(), // JSON, shape depends on type
+  createdAt: text('created_at').notNull().default(sql`(current_timestamp)`)
+})
+
+export const contentSnippets = sqliteTable('content_snippets', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  type: text('type', { enum: CONTENT_BLOCK_TYPES }).notNull(),
+  data: text('data').notNull(), // JSON, same shape as content_blocks.data for this type
+  createdAt: text('created_at').notNull().default(sql`(current_timestamp)`)
 })
 
 export const heroContent = sqliteTable('hero_content', {

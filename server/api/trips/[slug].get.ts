@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../../utils/db'
 import { trips } from '../../database/schema'
-import { enrichTrip } from '../../utils/trips'
+import { enrichTripDetail } from '../../utils/trips'
 
 export default defineEventHandler((event) => {
   const slug = getRouterParam(event, 'slug')
@@ -12,5 +12,5 @@ export default defineEventHandler((event) => {
     throw createError({ statusCode: 404, statusMessage: 'Trip not found' })
   }
 
-  return enrichTrip(trip)
+  return enrichTripDetail(trip)
 })
