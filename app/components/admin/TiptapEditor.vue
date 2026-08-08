@@ -3,6 +3,7 @@ import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
+import Image from '@tiptap/extension-image'
 
 const props = defineProps<{ modelValue: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
@@ -12,7 +13,8 @@ const editor = useEditor({
   extensions: [
     StarterKit,
     Underline,
-    TextAlign.configure({ types: ['heading', 'paragraph'] })
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    Image
   ],
   onUpdate: ({ editor: e }) => emit('update:modelValue', e.getHTML())
 })
@@ -52,11 +54,52 @@ const buttons = computed<ToolbarButton[]>(() => {
     { icon: 'i-lucide-redo-2', title: '重做', active: () => false, run: () => run(c => c.redo().run()) }
   ]
 })
+
+// 插入圖片：這裡插入的圖片是內文自己的圖，跟行程底下的「相簿」（trip_images）是兩回事，
+// 但共用同一個媒體庫，方便挑選已經上傳過的照片。
+interface MediaItem {
+  id: number
+  url: string
+  category: string | null
+}
+
+const imagePanelOpen = ref(false)
+const library = ref<MediaItem[]>([])
+const loadingLibrary = ref(false)
+const uploading = ref(false)
+
+async function openImagePanel() {
+  imagePanelOpen.value = !imagePanelOpen.value
+  if (imagePanelOpen.value && library.value.length === 0) {
+    loadingLibrary.value = true
+    try {
+      library.value = await $fetch<MediaItem[]>('/api/admin/media')
+    } finally {
+      loadingLibrary.value = false
+    }
+  }
+}
+
+function insertImage(url: string) {
+  run(c => c.setImage({ src: url }).run())
+  imagePanelOpen.value = false
+}
+
+async function simulateUpload() {
+  uploading.value = true
+  try {
+    const created = await $fetch<MediaItem>('/api/admin/media', { method: 'POST', body: {} })
+    library.value = [created, ...library.value]
+    insertImage(created.url)
+  } finally {
+    uploading.value = false
+  }
+}
 </script>
 
 <template>
   <div class="rounded-lg border border-gray-200">
-    <div v-if="editor" class="flex flex-wrap gap-1 border-b border-gray-200 bg-gray-50 p-1.5">
+    <div v-if="editor" class="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-1.5">
       <UButton
         v-for="btn in buttons"
         :key="btn.title"
@@ -68,7 +111,44 @@ const buttons = computed<ToolbarButton[]>(() => {
         square
         @click="btn.run()"
       />
+      <span class="mx-1 h-4 w-px bg-gray-200" />
+      <UButton
+        icon="i-lucide-image-plus"
+        title="插入圖片"
+        size="xs"
+        :color="imagePanelOpen ? 'primary' : 'neutral'"
+        :variant="imagePanelOpen ? 'soft' : 'ghost'"
+        square
+        @click="openImagePanel"
+      />
     </div>
+
+    <div v-if="imagePanelOpen" class="border-b border-gray-200 p-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-gray-500">從媒體庫選一張插入內文</span>
+        <UButton size="xs" color="primary" variant="soft" :loading="uploading" @click="simulateUpload">
+          模擬上傳新照片
+        </UButton>
+      </div>
+      <p v-if="loadingLibrary" class="mt-2 text-xs text-gray-400">
+        載入中…
+      </p>
+      <div v-else-if="library.length" class="mt-2 grid grid-cols-6 gap-2 sm:grid-cols-8">
+        <button
+          v-for="m in library"
+          :key="m.id"
+          type="button"
+          class="overflow-hidden rounded-lg border border-gray-200 hover:ring-2 hover:ring-primary"
+          @click="insertImage(m.url)"
+        >
+          <img :src="m.url" class="aspect-square w-full object-cover">
+        </button>
+      </div>
+      <p v-else class="mt-2 text-xs text-gray-400">
+        媒體庫還沒有照片，點右上角模擬上傳一張
+      </p>
+    </div>
+
     <EditorContent :editor="editor" class="prose prose-sm max-w-none px-3 py-2" />
   </div>
 </template>
