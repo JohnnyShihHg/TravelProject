@@ -85,14 +85,29 @@ function insertImage(url: string) {
   imagePanelOpen.value = false
 }
 
-async function simulateUpload() {
+const fileInput = ref<HTMLInputElement>()
+const uploadError = ref('')
+
+function pickFile() {
+  fileInput.value?.click()
+}
+
+async function onFileSelected(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  uploadError.value = ''
   uploading.value = true
   try {
-    const created = await $fetch<MediaItem>('/api/admin/media', { method: 'POST', body: {} })
+    const form = new FormData()
+    form.append('file', file)
+    const created = await $fetch<MediaItem>('/api/admin/media', { method: 'POST', body: form })
     library.value = [created, ...library.value]
     insertImage(created.url)
+  } catch (err) {
+    uploadError.value = (err as { data?: { statusMessage?: string } })?.data?.statusMessage ?? '上傳失敗'
   } finally {
     uploading.value = false
+    if (fileInput.value) fileInput.value.value = ''
   }
 }
 </script>
@@ -126,10 +141,14 @@ async function simulateUpload() {
     <div v-if="imagePanelOpen" class="border-b border-gray-200 p-3">
       <div class="flex items-center justify-between">
         <span class="text-xs text-gray-500">從媒體庫選一張插入內文</span>
-        <UButton size="xs" color="primary" variant="soft" :loading="uploading" @click="simulateUpload">
-          模擬上傳新照片
+        <UButton size="xs" color="primary" variant="soft" :loading="uploading" @click="pickFile">
+          上傳照片
         </UButton>
+        <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileSelected">
       </div>
+      <p v-if="uploadError" class="mt-2 text-xs text-red-600">
+        {{ uploadError }}
+      </p>
       <p v-if="loadingLibrary" class="mt-2 text-xs text-gray-400">
         載入中…
       </p>
@@ -145,7 +164,7 @@ async function simulateUpload() {
         </button>
       </div>
       <p v-else class="mt-2 text-xs text-gray-400">
-        媒體庫還沒有照片，點右上角模擬上傳一張
+        媒體庫還沒有照片，點右上角上傳一張
       </p>
     </div>
 

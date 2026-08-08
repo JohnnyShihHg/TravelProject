@@ -1,21 +1,22 @@
 import { getDB } from '../../../utils/db'
 import { media } from '../../../database/schema'
-
-interface CreateMediaBody {
-  category?: string
-  url?: string
-}
+import { storeUploadedImage } from '../../../utils/media'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<CreateMediaBody>(event)
-  const seed = `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-  const url = body.url?.trim() || `https://picsum.photos/seed/${seed}/1200/800`
+  const form = await readMultipartFormData(event)
+  const filePart = form?.find(p => p.name === 'file' && p.data?.length)
+  const categoryPart = form?.find(p => p.name === 'category')
 
-  // 本地開發階段沒有真的接 R2，先用假圖網址模擬上傳；正式部署時改成真的上傳到 R2 並存 r2_key
+  if (!filePart) throw createError({ statusCode: 400, statusMessage: '請選擇要上傳的圖片檔案' })
+  if (!filePart.type?.startsWith('image/')) throw createError({ statusCode: 400, statusMessage: '只能上傳圖片檔案' })
+
+  const category = categoryPart?.data.toString('utf-8') || null
+  const { key, url } = await storeUploadedImage(event, filePart.data, filePart.type)
+
   const db = getDB(event)
   return db.insert(media).values({
-    r2Key: `media/${seed}.jpg`,
+    r2Key: key,
     url,
-    category: body.category || null
+    category
   }).returning().get()
 })

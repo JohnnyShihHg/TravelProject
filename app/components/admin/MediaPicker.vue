@@ -13,6 +13,8 @@ const emit = defineEmits<{ refresh: [] }>()
 const { data: library, refresh: refreshLibrary } = await useFetch<MediaItem[]>('/api/admin/media')
 const categoryFilter = ref(props.defaultCategory ?? '')
 const uploading = ref(false)
+const uploadError = ref('')
+const fileInput = ref<HTMLInputElement>()
 
 const filteredLibrary = computed(() => {
   if (!categoryFilter.value) return library.value ?? []
@@ -21,17 +23,29 @@ const filteredLibrary = computed(() => {
 
 const attachedMediaUrls = computed(() => new Set(props.images.map(i => i.url)))
 
-async function simulateUpload() {
+function pickFile() {
+  fileInput.value?.click()
+}
+
+async function onFileSelected(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  uploadError.value = ''
   uploading.value = true
   try {
-    const created = await $fetch<MediaItem>('/api/admin/media', {
-      method: 'POST',
-      body: { category: categoryFilter.value || props.defaultCategory }
-    })
+    const form = new FormData()
+    form.append('file', file)
+    if (categoryFilter.value || props.defaultCategory) {
+      form.append('category', categoryFilter.value || props.defaultCategory || '')
+    }
+    const created = await $fetch<MediaItem>('/api/admin/media', { method: 'POST', body: form })
     await refreshLibrary()
     await attach(created.id)
+  } catch (err) {
+    uploadError.value = (err as { data?: { statusMessage?: string } })?.data?.statusMessage ?? '上傳失敗'
   } finally {
     uploading.value = false
+    if (fileInput.value) fileInput.value.value = ''
   }
 }
 
@@ -83,11 +97,15 @@ async function removeImage(imageId: number) {
         <h3 class="text-sm font-semibold text-gray-900">
           媒體庫（可依分類重複使用）
         </h3>
-        <UButton size="xs" color="primary" variant="soft" :loading="uploading" @click="simulateUpload">
-          模擬上傳新照片
+        <UButton size="xs" color="primary" variant="soft" :loading="uploading" @click="pickFile">
+          上傳照片
         </UButton>
+        <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileSelected">
       </div>
       <UInput v-model="categoryFilter" size="xs" placeholder="依分類篩選（例如：日本）" class="mt-2 w-48" />
+      <p v-if="uploadError" class="mt-2 text-xs text-red-600">
+        {{ uploadError }}
+      </p>
       <div v-if="filteredLibrary.length" class="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
         <button
           v-for="m in filteredLibrary"
@@ -101,7 +119,7 @@ async function removeImage(imageId: number) {
         </button>
       </div>
       <p v-else class="mt-2 text-xs text-gray-400">
-        此分類尚無媒體庫照片，點擊上方按鈕模擬上傳
+        此分類尚無媒體庫照片，點擊上方按鈕上傳
       </p>
     </div>
   </div>
