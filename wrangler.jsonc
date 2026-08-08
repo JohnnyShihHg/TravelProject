@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wuqiong-travel",
+  "account_id": "d533ce3cc36dd35fbf18273d2db0d264",
+  "main": "./.output/server/index.mjs",
+  "compatibility_date": "2025-07-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./.output/public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "wuqiong-travel",
+      "database_id": "a16f9442-c457-4ef8-b9d6-e082ae7b6efb"
+    }
+  ]
+}

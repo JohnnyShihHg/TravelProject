@@ -7,6 +7,21 @@
 2026-08-08 曾經誤用開發者自己登入的 wrangler session 建立過一個測試用 Worker（`wuqiong-travel-test`）與 D1 資料庫（`travelproject-test`），事後已經完整刪除（`wrangler delete` + `wrangler d1 delete`，並確認帳號上沒有殘留）。
 **之後任何 `wrangler deploy` / `wrangler d1 create` 之類會建立雲端資源的指令，動手前一定要先確認目前 wrangler 登入的是客戶的帳號，不是開發者自己的帳號**（用 `wrangler whoami` 確認）。
 
+**已確認的客戶帳號**（2026-08-08 客戶親自在本機執行 `wrangler login` 授權）：
+- Email：`nadia861130@gmail.com`
+- Account ID：`d533ce3cc36dd35fbf18273d2db0d264`
+- 之後在這台機器上部署 TravelProject，wrangler 登入的帳號應該都是這個；如果 `wrangler whoami` 顯示的不是這個帳號，代表登入狀態被換掉了，動手前要先確認/重新登入。
+
+**已知 wrangler 帳號自動解析 bug**：這台機器上 `wrangler whoami` 顯示正確帳號，但部分指令（例如 `wrangler d1 create`）內部解析 account_id 時有時仍會抓到別的帳號（實測抓到過開發者自己的帳號 id）。因此 `wrangler.jsonc` 裡明確寫死 `"account_id": "d533ce3cc36dd35fbf18273d2db0d264"`，之後任何新增雲端資源的指令最好也明確帶上 `CLOUDFLARE_ACCOUNT_ID=d533ce3cc36dd35fbf18273d2db0d264` 環境變數，不要完全信任自動解析。
+
+## 測試站部署狀態（2026-08-08）
+已部署到客戶帳號：**https://wuqiong-travel.nadia861130.workers.dev**
+- Worker 名稱：`wuqiong-travel`
+- D1 資料庫：`wuqiong-travel`（id `a16f9442-c457-4ef8-b9d6-e082ae7b6efb`），schema 見 `server/database/migrations/0000_init.sql`，測試假資料見 `0001_seed.sql`（從本機 SQLite 假資料匯出）
+- `wrangler.jsonc` 裡 `assets.run_worker_first: true` 是必要設定——沒設的話 Cloudflare 的靜態資源會攔截掉所有非首頁的 SSR 路由（`/about`、`/trips/[slug]` 等會變成 404，因為請求根本不會轉給 Worker 處理）
+- `/admin` 目前依然完全沒有登入驗證，這是測試站，之後如果要給客戶正式使用一定要補 Cloudflare Access
+- R2（真的圖片上傳）還沒接，媒體庫還是用假圖網址
+
 ## 基礎設施
 - Cloudflare 全家桶：Worker（後端 API）+ Pages（前端，這個 repo 是 Nuxt 4）+ R2（媒體）+ D1（資料庫）
 - **純展示型網站，無金流、無報名/成團機制**（batch 上的成團人數/費用僅供顯示參考，不做庫存扣減或線上付款）
