@@ -53,13 +53,10 @@ const links = [
     </div>
 
     <div class="border-t border-gray-100 px-4 py-4 sm:px-6 lg:px-8">
-      <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 sm:flex-row">
+      <div class="mx-auto max-w-7xl">
         <p class="text-xs text-gray-400">
           © {{ year }} 無穹旅行社. All rights reserved.
         </p>
-        <NuxtLink to="/admin" class="text-xs text-gray-300 hover:text-gray-500">
-          後台管理
-        </NuxtLink>
       </div>
     </div>
   </footer>
