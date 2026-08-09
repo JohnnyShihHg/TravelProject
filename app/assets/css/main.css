@@ -2,7 +2,12 @@
 @import "@nuxt/ui";
 
 .prose img {
+  display: block;
   border-radius: 0.5rem;
+  width: 600px;
   max-width: 100%;
+  aspect-ratio: 3 / 2;
   height: auto;
+  object-fit: cover;
+  margin: 1.5rem auto;
 }

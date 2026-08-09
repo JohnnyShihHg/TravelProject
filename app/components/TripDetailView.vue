@@ -4,6 +4,7 @@ import type { TripDetail } from '~/types/trip'
 const props = defineProps<{ trip: TripDetail }>()
 
 const gallery = computed(() => props.trip.images.filter(i => !i.isCover))
+const flightBlock = computed(() => props.trip.blocks.find(b => b.type === 'flight'))
 
 const sortedBatches = computed(() => [...props.trip.batches].sort((a, b) => a.departureDate.localeCompare(b.departureDate)))
 const showAllBatches = ref(false)
@@ -139,7 +140,11 @@ onBeforeUnmount(() => observer?.disconnect())
         </UButton>
       </section>
 
-      <article class="mt-10 md:mt-40">
+      <div v-if="flightBlock" class="mt-10 md:mt-40">
+        <TripBlockFlight :data="(flightBlock.data as any)" />
+      </div>
+
+      <article :class="flightBlock ? 'mt-10' : 'mt-10 md:mt-40'">
         <TripContentBlocks :blocks="trip.blocks" />
 
         <div v-if="gallery.length" class="mt-10">
