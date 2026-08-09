@@ -11,7 +11,8 @@ const form = reactive({
   phone: '',
   email: '',
   interestedTripId: route.query.trip ? Number(route.query.trip) : undefined as number | undefined,
-  message: ''
+  // 首頁 hero 的「機票」選項會帶 topic 進來，先幫使用者填好詢問主題
+  message: typeof route.query.topic === 'string' ? `我想詢問${route.query.topic}相關服務：` : ''
 })
 
 const submitting = ref(false)
@@ -39,10 +40,11 @@ async function submit() {
 
 <template>
   <div>
-    <div class="relative h-56 overflow-hidden sm:h-64">
-      <img src="https://picsum.photos/seed/contact-hero/1600/700" alt="聯絡無穹旅行社" class="size-full object-cover">
+    <!-- hero 高度跟首頁 hero 一致 -->
+    <div class="relative min-h-[560px] overflow-hidden sm:min-h-[680px]">
+      <img src="https://picsum.photos/seed/contact-hero/1600/700" alt="聯絡無穹旅行社" class="absolute inset-0 size-full object-cover">
       <div class="absolute inset-0 bg-black/30" />
-      <div class="absolute inset-0 flex items-center justify-center">
+      <div class="absolute inset-0 flex items-center justify-center pt-16">
         <h1 class="text-3xl font-bold text-white sm:text-4xl">
           聯絡我們
         </h1>

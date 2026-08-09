@@ -13,61 +13,63 @@ function isActive(item: (typeof navItems)[number]) {
   return item.match(route.path)
 }
 
-const NAV_ROW_HEIGHT = 48
-const activeIndex = computed(() => navItems.findIndex(isActive))
+const NAV_ROW_HEIGHT = 52
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-50 md:flex">
-    <!-- 桌面版側邊欄 -->
-    <aside class="hidden shrink-0 bg-gray-900 md:sticky md:top-0 md:flex md:h-screen md:w-64 md:flex-col">
-      <div class="flex items-center gap-3 px-6 py-6">
-        <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
-          <UIcon name="i-lucide-compass" class="size-5 text-primary" />
+    <!-- 桌面版側邊欄：外層是溝槽，讓 aside 四周都不貼邊，像浮在頁面上的獨立元件 -->
+    <div class="hidden shrink-0 md:sticky md:top-0 md:block md:h-screen md:p-4">
+      <aside class="flex h-full w-60 flex-col rounded-[28px] bg-gray-900">
+        <div class="flex items-center gap-3 px-5 py-6">
+          <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
+            <UIcon name="i-lucide-compass" class="size-5 text-primary" />
+          </div>
+          <div class="min-w-0">
+            <p class="truncate text-sm font-bold text-white">
+              無穹旅行社
+            </p>
+            <p class="truncate text-xs text-gray-400">
+              後台管理
+            </p>
+          </div>
         </div>
-        <div class="min-w-0">
-          <p class="truncate text-sm font-bold text-white">
-            無穹旅行社
-          </p>
-          <p class="truncate text-xs text-gray-400">
-            後台管理
-          </p>
-        </div>
-      </div>
 
-      <nav class="relative mt-2 flex-1 pl-3">
-        <!-- 選中項目的滑動指示條，右側凹角跟主內容背景融合 -->
-        <div
-          v-if="activeIndex > -1"
-          class="nav-notch absolute left-3 right-0 z-0 transition-transform duration-300 ease-out"
-          :style="{ height: `${NAV_ROW_HEIGHT}px`, transform: `translateY(${activeIndex * NAV_ROW_HEIGHT}px)` }"
-        />
+        <nav class="mt-2 flex-1">
+          <div class="flex flex-col">
+            <NuxtLink
+              v-for="item in navItems"
+              :key="item.to"
+              :to="item.to"
+              class="group relative flex items-center"
+              :style="{ height: `${NAV_ROW_HEIGHT}px` }"
+            >
+              <span
+                class="absolute inset-y-1 left-3 right-3 rounded-full transition-colors"
+                :class="isActive(item) ? 'bg-white' : 'group-hover:bg-white/10'"
+              />
+              <span
+                class="relative flex items-center gap-3 pl-7 text-sm font-medium transition-colors"
+                :class="isActive(item) ? 'text-gray-900' : 'text-gray-300 group-hover:text-white'"
+              >
+                <UIcon :name="item.icon" class="size-4 shrink-0" />
+                {{ item.label }}
+              </span>
+            </NuxtLink>
+          </div>
+        </nav>
 
-        <div class="relative z-10 flex flex-col">
+        <div class="mx-3 border-t border-white/10 py-4">
           <NuxtLink
-            v-for="item in navItems"
-            :key="item.to"
-            :to="item.to"
-            class="flex items-center gap-3 rounded-full px-4 text-sm font-medium transition-colors"
-            :style="{ height: `${NAV_ROW_HEIGHT}px` }"
-            :class="isActive(item) ? 'text-gray-900' : 'mr-3 text-gray-300 hover:bg-white/10 hover:text-white'"
+            to="/"
+            class="flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
           >
-            <UIcon :name="item.icon" class="size-4 shrink-0" />
-            {{ item.label }}
+            <UIcon name="i-lucide-external-link" class="size-4 shrink-0" />
+            回到前台網站
           </NuxtLink>
         </div>
-      </nav>
-
-      <div class="border-t border-white/10 px-3 py-4">
-        <NuxtLink
-          to="/"
-          class="flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
-        >
-          <UIcon name="i-lucide-external-link" class="size-4 shrink-0" />
-          回到前台網站
-        </NuxtLink>
-      </div>
-    </aside>
+      </aside>
+    </div>
 
     <div class="min-w-0 flex-1">
       <!-- 手機版頂部列 -->
@@ -94,7 +96,7 @@ const activeIndex = computed(() => navItems.findIndex(isActive))
           leave-from-class="translate-y-0 opacity-100"
           leave-to-class="-translate-y-2 opacity-0"
         >
-          <nav v-if="mobileOpen" class="absolute inset-x-0 top-full z-40 space-y-1 border-t border-gray-100 bg-gray-900 px-3 py-3 shadow-lg">
+          <nav v-if="mobileOpen" class="absolute inset-x-3 top-full z-40 mt-2 space-y-1 rounded-3xl bg-gray-900 px-3 py-3 shadow-xl">
             <NuxtLink
               v-for="item in navItems"
               :key="item.to"
@@ -120,33 +122,3 @@ const activeIndex = computed(() => navItems.findIndex(isActive))
     </div>
   </div>
 </template>
-
-<style scoped>
-/* 側欄選中項目的滑動指示條：本體是主內容背景色（gray-50）。
-   右上/右下角用 radial-gradient 畫出四分之一圓，圓內是背景色、圓外透明
-   （露出後面側欄本身的深色），視覺上就是側欄邊緣被指示條的圓角往外凹出一塊。
-   （原本用 box-shadow 做，陰影沒被裁切會整塊溢出變成錯誤的凸起，改用漸層才乾淨。） */
-.nav-notch {
-  background-color: #f9fafb;
-  border-radius: 24px 0 0 24px;
-}
-
-.nav-notch::before,
-.nav-notch::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  width: 24px;
-  height: 24px;
-}
-
-.nav-notch::before {
-  top: -24px;
-  background: radial-gradient(circle at 100% 100%, #f9fafb 24px, transparent 24px);
-}
-
-.nav-notch::after {
-  bottom: -24px;
-  background: radial-gradient(circle at 100% 0%, #f9fafb 24px, transparent 24px);
-}
-</style>

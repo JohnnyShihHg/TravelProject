@@ -70,8 +70,9 @@ onBeforeUnmount(() => observer?.disconnect())
       </div>
     </Transition>
 
-    <div class="relative h-72 overflow-hidden sm:h-96">
-      <img v-if="trip.coverImageUrl" :src="trip.coverImageUrl" :alt="trip.title" class="size-full object-cover">
+    <!-- hero 高度跟首頁 hero 一致 -->
+    <div class="relative min-h-[560px] overflow-hidden sm:min-h-[680px]">
+      <img v-if="trip.coverImageUrl" :src="trip.coverImageUrl" :alt="trip.title" class="absolute inset-0 size-full object-cover">
       <div class="absolute inset-0 bg-black/30" />
       <div class="absolute inset-x-0 bottom-0 mx-auto max-w-[1200px] px-4 pb-8 sm:px-6">
         <div class="flex flex-wrap gap-2">

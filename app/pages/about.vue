@@ -4,14 +4,15 @@ useSeoMeta({ title: '關於無穹 - 無穹旅行社' })
 
 <template>
   <div>
-    <div class="relative h-64 overflow-hidden sm:h-80">
+    <!-- hero 高度跟首頁 hero 一致 -->
+    <div class="relative min-h-[560px] overflow-hidden sm:min-h-[680px]">
       <img
         src="https://picsum.photos/seed/about-hero/1600/900"
         alt="無穹旅行社"
-        class="size-full object-cover"
+        class="absolute inset-0 size-full object-cover"
       >
       <div class="absolute inset-0 bg-black/30" />
-      <div class="absolute inset-0 flex items-center justify-center">
+      <div class="absolute inset-0 flex items-center justify-center pt-16">
         <h1 class="text-3xl font-bold text-white sm:text-4xl">
           關於無穹
         </h1>

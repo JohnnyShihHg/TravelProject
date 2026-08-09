@@ -3,7 +3,7 @@ const year = new Date().getFullYear()
 
 const links = [
   { label: '首頁', to: '/' },
-  { label: '出團資訊', to: '/trips' },
+  { label: '探索行程', to: '/trips' },
   { label: '關於無穹', to: '/about' },
   { label: '聯絡我們', to: '/contact' }
 ]

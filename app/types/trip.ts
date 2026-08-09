@@ -1,3 +1,6 @@
+// 首頁 Hero 底部四個入口，選了之後在下方展開對應區塊
+export type HeroChoice = 'domestic' | 'overseas' | 'flight' | 'theme'
+
 export interface TripTag {
   id: number
   name: string

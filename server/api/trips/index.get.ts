@@ -1,17 +1,29 @@
 import { getDB } from '../../utils/db'
 import { listPublishedTrips, getTripSearchText } from '../../utils/trips'
 
+// 國內線＝帶有台灣地點標籤；國外線＝帶有台灣以外的地點標籤。
+// 沒有任何地點標籤的行程兩邊都不會出現，避免被誤歸類。
+const DOMESTIC_LOCATIONS = new Set(['台灣', '臺灣'])
+
 export default defineEventHandler(async (event) => {
   const db = getDB(event)
   const query = getQuery(event)
   const q = typeof query.q === 'string' ? query.q.trim() : ''
   const tagFilter = typeof query.tag === 'string' ? query.tag.trim() : ''
+  const scope = typeof query.scope === 'string' ? query.scope.trim() : ''
   const featuredOnly = query.featured === '1' || query.featured === 'true'
 
   let items = await listPublishedTrips(db)
 
   if (featuredOnly) {
     items = items.filter(t => t.isFeatured)
+  }
+
+  if (scope === 'domestic' || scope === 'overseas') {
+    const wantDomestic = scope === 'domestic'
+    items = items.filter(t => t.tags.some(
+      tag => tag.category === 'location' && DOMESTIC_LOCATIONS.has(tag.name) === wantDomestic
+    ))
   }
 
   if (tagFilter) {

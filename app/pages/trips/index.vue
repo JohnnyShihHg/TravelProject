@@ -7,11 +7,32 @@ const router = useRouter()
 const q = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const selectedDate = ref<string | null>(null)
 
+// 首頁 hero 會帶 scope（國內/國外）與 tag（主題）進來
+const scope = computed(() => (route.query.scope === 'domestic' || route.query.scope === 'overseas' ? route.query.scope : ''))
+const tag = computed(() => (typeof route.query.tag === 'string' ? route.query.tag : ''))
+
+const SCOPE_LABEL: Record<string, string> = { domestic: '國內線', overseas: '國外線' }
+
+const activeFilters = computed(() => {
+  const list: string[] = []
+  if (scope.value) list.push(SCOPE_LABEL[scope.value]!)
+  if (tag.value) list.push(tag.value)
+  return list
+})
+
 const { data: batches } = await useFetch<CalendarBatch[]>('/api/batches')
 
 const { data: trips, refresh } = await useFetch<TripSummary[]>('/api/trips', {
-  query: computed(() => (q.value ? { q: q.value } : {}))
+  query: computed(() => ({
+    ...(q.value ? { q: q.value } : {}),
+    ...(scope.value ? { scope: scope.value } : {}),
+    ...(tag.value ? { tag: tag.value } : {})
+  }))
 })
+
+function clearFilters() {
+  router.replace({ query: q.value ? { q: q.value } : {} })
+}
 
 const displayedTrips = computed(() => {
   if (!selectedDate.value || !trips.value) return trips.value ?? []
@@ -23,14 +44,16 @@ function onSelectDate(date: string | null) {
 }
 
 function submitSearch() {
-  router.replace({ query: q.value ? { q: q.value } : {} })
+  router.replace({ query: { ...route.query, q: q.value || undefined } })
   refresh()
 }
 </script>
 
 <template>
   <div>
-    <section class="relative overflow-hidden">
+    <!-- hero 高度跟首頁 hero 一致 -->
+    <!-- pt-16 補償疊在上方的固定導覽列，justify-center 讓內容在加高後的框裡置中 -->
+    <section class="relative flex min-h-[560px] flex-col justify-center overflow-hidden pt-16 sm:min-h-[680px]">
       <img
         src="https://picsum.photos/seed/trip-calendar/1600/500"
         alt=""
@@ -38,7 +61,7 @@ function submitSearch() {
       >
       <div class="absolute inset-0 bg-gradient-to-br from-teal-900/40 via-sky-900/30 to-blue-950/40" />
 
-      <div class="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div class="relative z-10 mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr] lg:items-start">
           <TripCalendar :batches="batches ?? []" @select-date="onSelectDate" />
 
@@ -56,6 +79,19 @@ function submitSearch() {
               </UButton>
             </form>
 
+            <div v-if="activeFilters.length" class="flex flex-wrap items-center gap-2">
+              <span
+                v-for="label in activeFilters"
+                :key="label"
+                class="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-900"
+              >
+                {{ label }}
+              </span>
+              <UButton size="xs" color="neutral" variant="link" class="text-white" @click="clearFilters">
+                清除篩選
+              </UButton>
+            </div>
+
             <p v-if="selectedDate" class="text-sm font-medium text-white">
               已篩選出團日期：{{ selectedDate }}
               <UButton size="xs" color="neutral" variant="link" class="text-white" @click="selectedDate = null">
@@ -68,7 +104,7 @@ function submitSearch() {
     </section>
 
     <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div v-if="displayedTrips.length" class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+      <div v-if="displayedTrips.length" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <TripCard v-for="trip in displayedTrips" :key="trip.id" :trip="trip" />
       </div>
       <p v-else class="text-sm text-gray-500">
