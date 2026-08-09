@@ -9,6 +9,8 @@ export const trips = sqliteTable('trips', {
   days: integer('days').notNull(),
   status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
   isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
+  // 標題旁的狀態標籤（熱銷中／即將成團／行程已結束…），null 代表不顯示
+  badge: text('badge'),
   rank: integer('rank').notNull().default(0),
   createdAt: text('created_at').notNull().default(sql`(current_timestamp)`),
   updatedAt: text('updated_at').notNull().default(sql`(current_timestamp)`)

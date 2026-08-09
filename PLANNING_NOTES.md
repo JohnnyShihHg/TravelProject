@@ -86,6 +86,14 @@
 - 編輯首頁 Hero
 - **前台不放後台連結**：一開始曾在公開頁 Footer 加過「後台管理」連結方便本地開發時尋找入口，已依使用者指示移除。之後前台（Header/Footer/任何公開頁面）都不要再放通往 `/admin` 的連結，後台入口只用網址直接輸入，正式上線後靠 Zero Trust 擋住即可，不需要也不應該從前台曝光。
 
+## 資料庫 migration 流程
+- **正式環境（D1）**：改用 wrangler 內建的 migration 系統。`wrangler.jsonc` 的 d1_databases 設了 `migrations_dir`，wrangler 會在 D1 建 `d1_migrations` 表記錄已套用的檔案。
+  - 部署指令 `npm run deploy` 已內含 `db:migrate`，會先套用未跑過的 migration 再 deploy，所以不會發生「程式碼上線但欄位還沒建」的錯誤。
+  - 可安全重複執行，換任何一台電腦都不用記得跑到哪一支。
+  - 新增欄位時：在 `server/database/migrations/` 加一支編號更大的 SQL 檔即可，**不要改動已套用過的檔案**（wrangler 用檔名判斷，改內容不會重跑）。
+- **本機開發**：`server/plugins/db-init.ts` 在 dev server 啟動時跑 `ensureSchema()`（CREATE TABLE IF NOT EXISTS）+ `seed()`（有防重複守衛）。全新 clone 直接 `npm run dev` 就有完整的表與種子資料，不需要手動跑任何 SQL（`.data/` 已 gitignore）。
+- **注意**：`server/utils/db.ts` 的 `ensureSchema()` 與 `migrations/*.sql` 是兩份各自維護的 schema，加欄位時**兩邊都要改**，否則會出現「本機正常、上線爆掉」。`applyLocalColumnMigrations()` 負責替既有的本機 DB 補新欄位。
+
 ## 待確認（新增，尚未實作）
 - **國內線／國外線需要正式的資料欄位**：首頁 Hero 的「國內線／國外線」目前是**推導**出來的，不是資料庫欄位。判斷邏輯寫在 `server/api/trips/index.get.ts` 的 `DOMESTIC_LOCATIONS`：行程帶有 `台灣`／`臺灣` 這個 `location` 標籤就算國內線，帶有其他 location 標籤就算國外線。已知問題：
   - 靠標籤名稱硬編碼。之後新增「澎湖」「花蓮」等標籤而沒有同時掛「台灣」，會被誤判成國外線。

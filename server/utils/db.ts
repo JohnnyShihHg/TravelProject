@@ -48,6 +48,15 @@ export function getDB(event?: H3Event): DB {
   return getLocalDb() as unknown as DB
 }
 
+// CREATE TABLE IF NOT EXISTS 不會替既有資料表補上新欄位，所以之後加的欄位要在這裡補一次。
+// 正式環境（D1）走 server/database/migrations 的 SQL 檔，兩邊要保持一致。
+function applyLocalColumnMigrations(sqlite: import('better-sqlite3').Database) {
+  const columns = sqlite.prepare('PRAGMA table_info(trips)').all() as { name: string }[]
+  if (!columns.some(c => c.name === 'badge')) {
+    sqlite.exec('ALTER TABLE trips ADD COLUMN badge TEXT')
+  }
+}
+
 export function ensureSchema() {
   getLocalSqlite().exec(`
     CREATE TABLE IF NOT EXISTS trips (
@@ -58,6 +67,7 @@ export function ensureSchema() {
       days INTEGER NOT NULL,
       status TEXT NOT NULL DEFAULT 'draft',
       is_featured INTEGER NOT NULL DEFAULT 0,
+      badge TEXT,
       rank INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (current_timestamp),
       updated_at TEXT NOT NULL DEFAULT (current_timestamp)
@@ -137,4 +147,6 @@ export function ensureSchema() {
       created_at TEXT NOT NULL DEFAULT (current_timestamp)
     );
   `)
+
+  applyLocalColumnMigrations(getLocalSqlite())
 }

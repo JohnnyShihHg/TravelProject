@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS trips (
   days INTEGER NOT NULL,
   status TEXT NOT NULL DEFAULT 'draft',
   is_featured INTEGER NOT NULL DEFAULT 0,
+  badge TEXT,
   rank INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (current_timestamp),
   updated_at TEXT NOT NULL DEFAULT (current_timestamp)

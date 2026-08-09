@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "build:cloudflare": "cross-env NITRO_PRESET=cloudflare_module nuxt build",
-    "deploy": "npm run build:cloudflare && wrangler deploy"
+    "db:migrate": "wrangler d1 migrations apply wuqiong-travel --remote",
+    "deploy": "npm run build:cloudflare && npm run db:migrate && wrangler deploy"
   },
   "dependencies": {
     "@nuxt/eslint": "^1.17.0",

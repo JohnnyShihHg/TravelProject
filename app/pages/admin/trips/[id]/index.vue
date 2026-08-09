@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { TRIP_BADGES } from '~/types/trip'
 import type { TripDetail, TripTag, TripBatch } from '~/types/trip'
 
 definePageMeta({ layout: 'admin' })
@@ -15,7 +16,23 @@ const form = reactive({
   days: 1,
   tagNames: [] as string[],
   isFeatured: false,
+  badge: '' as string,
   rank: 0
+})
+
+// form.badge 用空字串代表「不顯示」，送出後由後端轉成 null。
+// 但 Reka UI 的 Select 不接受空字串當選項值（空字串被保留用來清除選取），
+// 所以下拉選單另外用 NO_BADGE 這個哨兵值，透過 computed 對應回空字串。
+const NO_BADGE = 'none'
+
+const badgeOptions = [
+  { label: '不顯示', value: NO_BADGE },
+  ...TRIP_BADGES.map(b => ({ label: b, value: b }))
+]
+
+const badgeSelect = computed({
+  get: () => form.badge || NO_BADGE,
+  set: (value: string) => { form.badge = value === NO_BADGE ? '' : value }
 })
 
 watchEffect(() => {
@@ -25,6 +42,7 @@ watchEffect(() => {
   form.days = trip.value.days
   form.tagNames = trip.value.tags.map(t => t.name)
   form.isFeatured = trip.value.isFeatured
+  form.badge = trip.value.badge ?? ''
   form.rank = trip.value.rank
 })
 
@@ -67,11 +85,16 @@ async function save() {
   }
 }
 
-async function togglePublish() {
-  if (!trip.value) return
-  const nextStatus = trip.value.status === 'published' ? 'draft' : 'published'
-  await $fetch(`/api/admin/trips/${id}`, { method: 'PATCH', body: { status: nextStatus } })
-  await refresh()
+const togglingStatus = ref(false)
+
+async function setEnabled(enabled: boolean) {
+  togglingStatus.value = true
+  try {
+    await $fetch(`/api/admin/trips/${id}`, { method: 'PATCH', body: { status: enabled ? 'published' : 'draft' } })
+    await refresh()
+  } finally {
+    togglingStatus.value = false
+  }
 }
 
 // 出團梯次
@@ -106,15 +129,15 @@ async function removeBatch(batch: TripBatch) {
       <h1 class="text-2xl font-bold text-gray-900">
         編輯行程
       </h1>
-      <div class="flex flex-wrap items-center gap-2">
-        <UBadge :color="trip.status === 'published' ? 'success' : 'neutral'" variant="subtle">
-          {{ trip.status === 'published' ? '已發布' : '草稿' }}
-        </UBadge>
+      <div class="flex flex-wrap items-center gap-3">
+        <USwitch
+          :model-value="trip.status === 'published'"
+          :disabled="togglingStatus"
+          :label="trip.status === 'published' ? '啟用中' : '已關閉'"
+          @update:model-value="setEnabled($event)"
+        />
         <UButton :to="`/admin/trips/${id}/preview`" target="_blank" size="sm" color="neutral" variant="soft" icon="i-lucide-eye">
           預覽整頁
-        </UButton>
-        <UButton size="sm" color="neutral" variant="soft" @click="togglePublish">
-          {{ trip.status === 'published' ? '設為草稿' : '發布' }}
         </UButton>
       </div>
     </div>
@@ -122,6 +145,10 @@ async function removeBatch(batch: TripBatch) {
     <section class="mt-6 space-y-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
       <UFormField label="行程標題" required>
         <UInput v-model="form.title" class="w-full" />
+      </UFormField>
+
+      <UFormField label="狀態標籤" help="顯示在行程標題旁，例如熱銷中、行程已結束">
+        <USelect v-model="badgeSelect" :items="badgeOptions" class="w-full sm:w-56" />
       </UFormField>
       <UFormField label="簡介（顯示於行程列表卡片，不會顯示在行程詳情頁）">
         <UTextarea v-model="form.summary" :rows="2" class="w-full" />

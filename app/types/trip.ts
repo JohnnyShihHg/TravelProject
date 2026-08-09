@@ -1,6 +1,9 @@
 // 首頁 Hero 底部四個入口，選了之後在下方展開對應區塊
 export type HeroChoice = 'domestic' | 'overseas' | 'flight' | 'theme'
 
+// 行程標題旁可選的狀態標籤
+export const TRIP_BADGES = ['熱銷中', '即將成團', '已成團', '最後席次', '行程已結束'] as const
+
 export interface TripTag {
   id: number
   name: string
@@ -35,7 +38,11 @@ export interface TripSummary {
   days: number
   status: 'draft' | 'published'
   isFeatured: boolean
+  /** 標題旁的狀態標籤，null 代表不顯示 */
+  badge: string | null
   rank: number
+  createdAt: string
+  updatedAt: string
   tags: TripTag[]
   batches: TripBatch[]
   images: TripImage[]

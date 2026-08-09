@@ -9,6 +9,7 @@ interface UpdateTripBody {
   days?: number
   status?: 'draft' | 'published'
   isFeatured?: boolean
+  badge?: string | null
   rank?: number
   tagNames?: string[]
 }
@@ -27,6 +28,8 @@ export default defineEventHandler(async (event) => {
   if (body.days !== undefined) updates.days = body.days
   if (body.status !== undefined) updates.status = body.status
   if (body.isFeatured !== undefined) updates.isFeatured = body.isFeatured
+  // 空字串等同「不顯示標籤」，統一存成 null
+  if (body.badge !== undefined) updates.badge = body.badge?.trim() || null
   if (body.rank !== undefined) updates.rank = body.rank
 
   await db.update(trips).set(updates).where(eq(trips.id, id)).run()

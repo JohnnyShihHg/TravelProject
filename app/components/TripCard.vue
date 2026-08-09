@@ -20,7 +20,12 @@ const primaryTag = props.trip.tags[0]?.name ?? '行程'
       >
     </div>
     <div class="p-4">
-      <span class="text-xs font-medium text-primary">{{ primaryTag }}</span>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-medium text-primary">{{ primaryTag }}</span>
+        <UBadge v-if="trip.badge" color="warning" variant="subtle" size="sm">
+          {{ trip.badge }}
+        </UBadge>
+      </div>
       <h3 class="mt-1 line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-primary">
         {{ trip.title }}
       </h3>

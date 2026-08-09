@@ -53,10 +53,35 @@ async function saveBlock(block: ContentBlock) {
   }
 }
 
-async function removeBlock(block: ContentBlock) {
-  if (!confirm('確定要刪除這個區塊嗎？')) return
-  await $fetch(`/api/admin/blocks/${block.id}`, { method: 'DELETE' })
-  emit('refresh')
+// 刪除確認（區塊與範本共用同一個對話框）
+const confirmOpen = ref(false)
+const confirming = ref(false)
+const confirmMessage = ref('')
+let confirmAction: (() => Promise<void>) | null = null
+
+function askConfirm(message: string, action: () => Promise<void>) {
+  confirmMessage.value = message
+  confirmAction = action
+  confirmOpen.value = true
+}
+
+async function runConfirm() {
+  if (!confirmAction) return
+  confirming.value = true
+  try {
+    await confirmAction()
+    confirmOpen.value = false
+    confirmAction = null
+  } finally {
+    confirming.value = false
+  }
+}
+
+function removeBlock(block: ContentBlock) {
+  askConfirm('確定要刪除這個區塊嗎？此動作無法復原。', async () => {
+    await $fetch(`/api/admin/blocks/${block.id}`, { method: 'DELETE' })
+    emit('refresh')
+  })
 }
 
 async function move(block: ContentBlock, direction: -1 | 1) {
@@ -96,10 +121,11 @@ async function insertSnippet(snippet: ContentSnippet) {
   addPanelOpen.value = false
 }
 
-async function deleteSnippet(snippet: ContentSnippet) {
-  if (!confirm(`確定要從範本庫刪除「${snippet.name}」嗎？`)) return
-  await $fetch(`/api/admin/snippets/${snippet.id}`, { method: 'DELETE' })
-  await refreshSnippets()
+function deleteSnippet(snippet: ContentSnippet) {
+  askConfirm(`確定要從範本庫刪除「${snippet.name}」嗎？此動作無法復原。`, async () => {
+    await $fetch(`/api/admin/snippets/${snippet.id}`, { method: 'DELETE' })
+    await refreshSnippets()
+  })
 }
 </script>
 
@@ -167,5 +193,12 @@ async function deleteSnippet(snippet: ContentSnippet) {
         </div>
       </div>
     </div>
+
+    <AdminConfirmDialog
+      v-model:open="confirmOpen"
+      :message="confirmMessage"
+      :loading="confirming"
+      @confirm="runConfirm"
+    />
   </div>
 </template>

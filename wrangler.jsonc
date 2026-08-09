@@ -14,7 +14,11 @@
     {
       "binding": "DB",
       "database_name": "wuqiong-travel",
-      "database_id": "a16f9442-c457-4ef8-b9d6-e082ae7b6efb"
+      "database_id": "a16f9442-c457-4ef8-b9d6-e082ae7b6efb",
+      // wrangler 會在 D1 建 d1_migrations 表記錄已套用的檔案，
+      // 之後不論在哪台電腦都是 `wrangler d1 migrations apply wuqiong-travel --remote`，
+      // 可安全重複執行，不會重跑或漏跑。
+      "migrations_dir": "server/database/migrations"
     }
   ],
   "r2_buckets": [

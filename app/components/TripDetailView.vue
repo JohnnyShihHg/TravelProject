@@ -76,6 +76,9 @@ onBeforeUnmount(() => observer?.disconnect())
       <div class="absolute inset-0 bg-black/30" />
       <div class="absolute inset-x-0 bottom-0 mx-auto max-w-[1200px] px-4 pb-8 sm:px-6">
         <div class="flex flex-wrap gap-2">
+          <UBadge v-if="trip.badge" color="warning" variant="solid">
+            {{ trip.badge }}
+          </UBadge>
           <UBadge v-for="tag in trip.tags" :key="tag.id" color="primary" variant="solid">
             {{ tag.name }}
           </UBadge>
