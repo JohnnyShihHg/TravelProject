@@ -97,7 +97,7 @@ async function removeBatch(batch: TripBatch) {
 </script>
 
 <template>
-  <div v-if="trip" class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+  <div v-if="trip" class="mx-auto max-w-3xl px-4 py-8 sm:px-6">
     <UButton to="/admin" color="neutral" variant="link" icon="i-lucide-arrow-left" class="mb-4 px-0">
       返回後台
     </UButton>
@@ -119,7 +119,7 @@ async function removeBatch(batch: TripBatch) {
       </div>
     </div>
 
-    <section class="mt-6 space-y-5">
+    <section class="mt-6 space-y-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
       <UFormField label="行程標題" required>
         <UInput v-model="form.title" class="w-full" />
       </UFormField>
@@ -160,7 +160,7 @@ async function removeBatch(batch: TripBatch) {
       <span v-if="saved" class="ml-3 text-sm text-green-600">已儲存</span>
     </section>
 
-    <section class="mt-10">
+    <section class="mt-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
       <h2 class="text-lg font-semibold text-gray-900">
         出團梯次
       </h2>
@@ -205,7 +205,7 @@ async function removeBatch(batch: TripBatch) {
       </div>
     </section>
 
-    <section class="mt-10">
+    <section class="mt-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
       <h2 class="text-lg font-semibold text-gray-900">
         行程內容
       </h2>
@@ -217,7 +217,7 @@ async function removeBatch(batch: TripBatch) {
       </div>
     </section>
 
-    <section class="mt-10">
+    <section class="mt-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
       <h2 class="text-lg font-semibold text-gray-900">
         照片
       </h2>

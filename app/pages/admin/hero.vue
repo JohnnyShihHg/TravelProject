@@ -31,7 +31,7 @@ function randomizeImage() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+  <div class="mx-auto max-w-2xl px-4 py-8 sm:px-6">
     <UButton to="/admin" color="neutral" variant="link" icon="i-lucide-arrow-left" class="mb-4 px-0">
       返回後台
     </UButton>
@@ -39,7 +39,7 @@ function randomizeImage() {
       編輯首頁 Hero
     </h1>
 
-    <form class="mt-6 space-y-5" @submit.prevent="save">
+    <form class="mt-6 space-y-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6" @submit.prevent="save">
       <UFormField label="標題">
         <UInput v-model="form.title" class="w-full" />
       </UFormField>

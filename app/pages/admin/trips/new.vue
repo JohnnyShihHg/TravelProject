@@ -55,7 +55,7 @@ async function create() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+  <div class="mx-auto max-w-2xl px-4 py-8 sm:px-6">
     <UButton to="/admin" color="neutral" variant="link" icon="i-lucide-arrow-left" class="mb-4 px-0">
       返回後台
     </UButton>
@@ -66,7 +66,7 @@ async function create() {
       建立後會先存為草稿，儲存後可以繼續編輯梯次與照片，確認沒問題再發布。
     </p>
 
-    <form class="mt-6 space-y-5" @submit.prevent="create">
+    <form class="mt-6 space-y-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6" @submit.prevent="create">
       <UFormField label="行程標題" required>
         <UInput v-model="form.title" class="w-full" />
       </UFormField>
