@@ -53,7 +53,7 @@ function selectDate(date: string | null) {
 </script>
 
 <template>
-  <div class="rounded-xl border border-gray-100 p-4 shadow-sm sm:p-6">
+  <div class="rounded-xl border border-gray-100 bg-white/95 p-4 shadow-sm sm:p-6">
     <div class="mb-4 flex items-center justify-between">
       <UButton icon="i-lucide-chevron-left" color="neutral" variant="ghost" @click="prevMonth" />
       <span class="text-sm font-semibold text-gray-900">{{ monthLabel }}</span>

@@ -40,15 +40,27 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
       />
     </div>
 
-    <nav v-if="mobileOpen" class="border-t border-gray-100 bg-white px-4 py-3 md:hidden">
-      <NuxtLink
-        v-for="link in links"
-        :key="link.label"
-        :to="link.to"
-        class="block py-2 text-sm font-medium text-gray-600 hover:text-primary"
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="-translate-y-2 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="-translate-y-2 opacity-0"
+    >
+      <nav
+        v-if="mobileOpen"
+        class="absolute inset-x-0 top-full border-t border-gray-100 bg-white px-4 py-3 shadow-lg md:hidden"
       >
-        {{ link.label }}
-      </NuxtLink>
-    </nav>
+        <NuxtLink
+          v-for="link in links"
+          :key="link.label"
+          :to="link.to"
+          class="block py-2 text-sm font-medium text-gray-600 hover:text-primary"
+        >
+          {{ link.label }}
+        </NuxtLink>
+      </nav>
+    </Transition>
   </header>
 </template>

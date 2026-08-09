@@ -5,12 +5,15 @@ defineProps<{ data: RichTextBlockData }>()
 </script>
 
 <template>
-  <div class="rounded-xl border border-primary/20 bg-primary/5 p-5">
-    <div class="mb-2 flex items-center gap-2 text-primary">
-      <UIcon name="i-lucide-sparkles" class="size-4" />
-      <span class="text-sm font-semibold">行程亮點</span>
+  <div>
+    <div class="mb-4 flex items-center justify-center gap-2 text-gray-900">
+      <UIcon name="i-lucide-sparkles" class="size-5 text-primary sm:size-6" />
+      <span class="text-xl font-semibold sm:text-2xl">行程亮點</span>
     </div>
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <div class="prose prose-sm max-w-none" v-html="data.html" />
+
+    <div class="rounded-xl border border-primary/20 bg-primary/5 p-5">
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <div class="prose prose-base max-w-none" v-html="data.html" />
+    </div>
   </div>
 </template>

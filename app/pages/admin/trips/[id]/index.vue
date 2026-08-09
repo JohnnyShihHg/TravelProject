@@ -123,7 +123,7 @@ async function removeBatch(batch: TripBatch) {
       <UFormField label="行程標題" required>
         <UInput v-model="form.title" class="w-full" />
       </UFormField>
-      <UFormField label="簡介">
+      <UFormField label="簡介（顯示於行程列表卡片，不會顯示在行程詳情頁）">
         <UTextarea v-model="form.summary" :rows="2" class="w-full" />
       </UFormField>
       <UFormField label="天數">

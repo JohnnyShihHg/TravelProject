@@ -6,5 +6,5 @@ defineProps<{ data: RichTextBlockData }>()
 
 <template>
   <!-- eslint-disable-next-line vue/no-v-html -->
-  <div class="prose prose-sm max-w-none" v-html="data.html" />
+  <div class="prose prose-base max-w-none" v-html="data.html" />
 </template>

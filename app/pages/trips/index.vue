@@ -30,40 +30,50 @@ function submitSearch() {
 
 <template>
   <div>
-    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">
-        出團資訊
-      </h1>
-      <p class="mt-2 text-sm text-gray-500">
-        瀏覽近期出團日期與所有行程
-      </p>
+    <section class="relative overflow-hidden">
+      <img
+        src="https://picsum.photos/seed/trip-calendar/1600/500"
+        alt=""
+        class="absolute inset-0 size-full object-cover"
+      >
+      <div class="absolute inset-0 bg-gradient-to-br from-teal-900/40 via-sky-900/30 to-blue-950/40" />
 
-      <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[320px_1fr]">
-        <TripCalendar :batches="batches ?? []" @select-date="onSelectDate" />
+      <div class="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr] lg:items-start">
+          <TripCalendar :batches="batches ?? []" @select-date="onSelectDate" />
 
-        <div>
-          <form class="mb-6 flex gap-2" @submit.prevent="submitSearch">
-            <UInput v-model="q" placeholder="搜尋地點、景點或行程類型" icon="i-lucide-search" class="w-full max-w-sm" />
-            <UButton type="submit" color="primary">
-              搜尋
-            </UButton>
-          </form>
+          <div class="flex flex-col justify-center gap-4 lg:min-h-full">
+            <form class="flex w-full flex-row items-center gap-2 rounded-full bg-white p-2 shadow-lg" @submit.prevent="submitSearch">
+              <UIcon name="i-lucide-search" class="ml-3 size-5 shrink-0 text-gray-400" />
+              <input
+                v-model="q"
+                type="text"
+                placeholder="搜尋地點、景點或行程類型"
+                class="w-full min-w-0 border-none bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
+              >
+              <UButton type="submit" color="primary" variant="solid" size="lg" class="shrink-0 whitespace-nowrap rounded-full px-6">
+                搜尋
+              </UButton>
+            </form>
 
-          <p v-if="selectedDate" class="mb-4 text-sm text-gray-500">
-            已篩選出團日期：{{ selectedDate }}
-            <UButton size="xs" color="neutral" variant="link" @click="selectedDate = null">
-              清除
-            </UButton>
-          </p>
-
-          <div v-if="displayedTrips.length" class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            <TripCard v-for="trip in displayedTrips" :key="trip.id" :trip="trip" />
+            <p v-if="selectedDate" class="text-sm font-medium text-white">
+              已篩選出團日期：{{ selectedDate }}
+              <UButton size="xs" color="neutral" variant="link" class="text-white" @click="selectedDate = null">
+                清除
+              </UButton>
+            </p>
           </div>
-          <p v-else class="text-sm text-gray-500">
-            找不到符合條件的行程
-          </p>
         </div>
       </div>
+    </section>
+
+    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div v-if="displayedTrips.length" class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <TripCard v-for="trip in displayedTrips" :key="trip.id" :trip="trip" />
+      </div>
+      <p v-else class="text-sm text-gray-500">
+        找不到符合條件的行程
+      </p>
     </div>
   </div>
 </template>

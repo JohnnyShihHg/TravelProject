@@ -73,7 +73,7 @@ async function create() {
       <UFormField label="網址代稱（slug，留空自動產生）">
         <UInput v-model="form.slug" placeholder="例如 tokyo-sakura-5days" class="w-full" />
       </UFormField>
-      <UFormField label="簡介">
+      <UFormField label="簡介（顯示於行程列表卡片，不會顯示在行程詳情頁）">
         <UTextarea v-model="form.summary" :rows="2" class="w-full" />
       </UFormField>
       <UFormField label="天數">
