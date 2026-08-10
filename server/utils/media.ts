@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
+import { mkdirSync, writeFileSync, readFileSync, existsSync, unlinkSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import type { R2Bucket, ImagesBinding } from '@cloudflare/workers-types'
 
@@ -63,6 +63,24 @@ const EXT_CONTENT_TYPE: Record<string, string> = {
   png: 'image/png',
   webp: 'image/webp',
   gif: 'image/gif'
+}
+
+/**
+ * 刪掉實際的檔案。刻意做成「盡力而為」：呼叫端已經先刪掉資料庫紀錄，
+ * 就算這裡失敗也只是 R2／磁碟上多一個孤兒檔案，不該讓整個刪除動作失敗。
+ */
+export async function deleteStoredImage(event: H3Event, key: string): Promise<void> {
+  const cf = getCloudflareMediaEnv(event)
+  try {
+    if (cf) {
+      await cf.bucket.delete(key)
+      return
+    }
+    const localPath = join(LOCAL_UPLOAD_DIR, key)
+    if (existsSync(localPath)) unlinkSync(localPath)
+  } catch (err) {
+    console.warn(`[media] 刪除檔案失敗，留下孤兒檔案 ${key}:`, err)
+  }
 }
 
 export async function readLocalUpload(key: string): Promise<{ data: Buffer, contentType: string } | null> {
