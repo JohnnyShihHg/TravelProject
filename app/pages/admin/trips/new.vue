@@ -18,20 +18,14 @@ const saving = ref(false)
 const errorMessage = ref('')
 
 const newTagName = ref('')
-const newTagCategory = ref<'location' | 'attraction' | 'type'>('type')
 const creatingTag = ref(false)
-const tagCategoryOptions = [
-  { label: '地點', value: 'location' },
-  { label: '景點', value: 'attraction' },
-  { label: '類型', value: 'type' }
-]
 
 async function createTag() {
   const name = newTagName.value.trim()
   if (!name) return
   creatingTag.value = true
   try {
-    const tag = await $fetch<TripTag>('/api/admin/tags', { method: 'POST', body: { name, category: newTagCategory.value } })
+    const tag = await $fetch<TripTag>('/api/admin/tags', { method: 'POST', body: { name } })
     await refreshTags()
     if (!form.tagNames.includes(tag.name)) form.tagNames.push(tag.name)
     newTagName.value = ''
@@ -88,7 +82,6 @@ async function create() {
         </div>
         <div class="mt-3 flex flex-wrap items-center gap-2">
           <UInput v-model="newTagName" size="xs" placeholder="新標籤名稱" class="w-full sm:w-40" @keyup.enter="createTag" />
-          <USelect v-model="newTagCategory" size="xs" :items="tagCategoryOptions" class="w-28" />
           <UButton size="xs" color="neutral" variant="soft" :loading="creatingTag" @click="createTag">
             ＋新增標籤
           </UButton>

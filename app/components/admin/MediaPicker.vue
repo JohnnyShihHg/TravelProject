@@ -1,24 +1,36 @@
 <script setup lang="ts">
-import type { TripImage } from '~/types/trip'
+import type { TripImage, MediaLibraryItem, Destination } from '~/types/trip'
 
-interface MediaItem {
-  id: number
-  url: string
-  category: string | null
-}
-
-const props = defineProps<{ tripId: number, images: TripImage[], defaultCategory: string | null }>()
+const props = defineProps<{ tripId: number, images: TripImage[], defaultDestinationSlug: string | null }>()
 const emit = defineEmits<{ refresh: [] }>()
 
-const { data: library, refresh: refreshLibrary } = await useFetch<MediaItem[]>('/api/admin/media')
-const categoryFilter = ref(props.defaultCategory ?? '')
+const { data: library, refresh: refreshLibrary } = await useFetch<MediaLibraryItem[]>('/api/admin/media')
+const { data: destinations } = await useFetch<Destination[]>('/api/destinations')
+
+// 篩選改成選既有地點，不再打字 —— 自由文字會產生「東京」「東京 」這種看不出來的錯字分身。
+// ALL 是哨兵值：Reka UI 的 Select 不接受空字串當選項值（空字串保留給「清除選取」），
+// 直接用 '' 會在客戶端渲染時整頁噴 500。
+const ALL = 'all'
+const destinationFilter = ref(props.defaultDestinationSlug || ALL)
 const uploading = ref(false)
 const uploadError = ref('')
 const fileInput = ref<HTMLInputElement>()
 
+const destinationOptions = computed(() => {
+  const all = destinations.value ?? []
+  return [
+    { label: '全部照片', value: ALL },
+    // 城市顯示成「日本 › 京都」，避免同名城市分不清楚屬於哪個國家
+    ...all.map(d => ({
+      label: d.parentId ? `${all.find(p => p.id === d.parentId)?.name ?? ''} › ${d.name}` : d.name,
+      value: d.slug
+    }))
+  ]
+})
+
 const filteredLibrary = computed(() => {
-  if (!categoryFilter.value) return library.value ?? []
-  return (library.value ?? []).filter(m => m.category === categoryFilter.value)
+  if (destinationFilter.value === ALL) return library.value ?? []
+  return (library.value ?? []).filter(m => m.destinations.some(d => d.slug === destinationFilter.value))
 })
 
 const attachedMediaUrls = computed(() => new Set(props.images.map(i => i.url)))
@@ -35,10 +47,11 @@ async function onFileSelected(e: Event) {
   try {
     const form = new FormData()
     form.append('file', file)
-    if (categoryFilter.value || props.defaultCategory) {
-      form.append('category', categoryFilter.value || props.defaultCategory || '')
-    }
-    const created = await $fetch<MediaItem>('/api/admin/media', { method: 'POST', body: form })
+    // 上傳時自動掛上目前篩選的地點，省去事後再標記
+    const slug = destinationFilter.value === ALL ? props.defaultDestinationSlug : destinationFilter.value
+    const destination = (destinations.value ?? []).find(d => d.slug === slug)
+    if (destination) form.append('destinationIds', String(destination.id))
+    const created = await $fetch<MediaLibraryItem>('/api/admin/media', { method: 'POST', body: form })
     await refreshLibrary()
     await attach(created.id)
   } catch (err) {
@@ -95,14 +108,14 @@ async function removeImage(imageId: number) {
     <div>
       <div class="flex flex-wrap items-center justify-between gap-2">
         <h3 class="text-sm font-semibold text-gray-900">
-          媒體庫（可依分類重複使用）
+          媒體庫（可依地點重複使用）
         </h3>
         <UButton size="xs" color="primary" variant="soft" :loading="uploading" @click="pickFile">
           上傳照片
         </UButton>
         <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileSelected">
       </div>
-      <UInput v-model="categoryFilter" size="xs" placeholder="依分類篩選（例如：日本）" class="mt-2 w-48" />
+      <USelect v-model="destinationFilter" size="xs" :items="destinationOptions" class="mt-2 w-48" />
       <p v-if="uploadError" class="mt-2 text-xs text-red-600">
         {{ uploadError }}
       </p>
@@ -119,7 +132,7 @@ async function removeImage(imageId: number) {
         </button>
       </div>
       <p v-else class="mt-2 text-xs text-gray-400">
-        此分類尚無媒體庫照片，點擊上方按鈕上傳
+        此地點尚無媒體庫照片，點擊上方按鈕上傳
       </p>
     </div>
   </div>

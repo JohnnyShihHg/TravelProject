@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
       phone: contactSubmissions.phone,
       email: contactSubmissions.email,
       message: contactSubmissions.message,
+      isRead: contactSubmissions.isRead,
       createdAt: contactSubmissions.createdAt,
       interestedTripTitle: trips.title
     })

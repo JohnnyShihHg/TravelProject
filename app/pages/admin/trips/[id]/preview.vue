@@ -3,6 +3,10 @@ import type { TripDetail } from '~/types/trip'
 
 definePageMeta({ layout: 'default' })
 
+// 這頁用 default layout（要模擬前台外觀），所以拿不到 admin layout 的 noindex，
+// 必須自己擋。它沒有任何驗證又看得到未發布的草稿內容，被收錄等於直接外流。
+useSeoMeta({ robots: 'noindex, nofollow' })
+
 const route = useRoute()
 const id = Number(route.params.id)
 

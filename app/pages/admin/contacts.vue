@@ -7,28 +7,86 @@ interface ContactRow {
   phone: string | null
   email: string | null
   message: string
+  isRead: boolean
   createdAt: string
   interestedTripTitle: string | null
 }
 
-const { data: contacts } = await useFetch<ContactRow[]>('/api/admin/contacts')
+const { data: contacts, refresh } = await useFetch<ContactRow[]>('/api/admin/contacts')
+
+const unreadCount = computed(() => (contacts.value ?? []).filter(c => !c.isRead).length)
+const busyId = ref<number | null>(null)
+const markingAll = ref(false)
+
+async function toggleRead(c: ContactRow) {
+  busyId.value = c.id
+  try {
+    await $fetch(`/api/admin/contacts/${c.id}`, { method: 'PATCH', body: { isRead: !c.isRead } })
+    await refresh()
+  } finally {
+    busyId.value = null
+  }
+}
+
+async function markAllRead() {
+  markingAll.value = true
+  try {
+    await $fetch('/api/admin/contacts/read-all', { method: 'POST' })
+    await refresh()
+  } finally {
+    markingAll.value = false
+  }
+}
 </script>
 
 <template>
   <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-    <UButton to="/admin" color="neutral" variant="link" icon="i-lucide-arrow-left" class="mb-4 px-0">
-      返回後台
-    </UButton>
-    <h1 class="text-2xl font-bold text-gray-900">
-      聯絡表單留言
-    </h1>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">
+          聯絡表單留言
+        </h1>
+        <p class="mt-1 text-sm text-gray-500">
+          {{ unreadCount ? `${unreadCount} 筆未讀` : '沒有未讀留言' }}
+        </p>
+      </div>
+      <UButton
+        v-if="unreadCount"
+        color="neutral"
+        variant="soft"
+        icon="i-lucide-check-check"
+        :loading="markingAll"
+        @click="markAllRead"
+      >
+        全部標為已讀
+      </UButton>
+    </div>
 
     <div class="mt-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
       <div v-if="contacts?.length" class="space-y-3">
-        <div v-for="c in contacts" :key="c.id" class="rounded-xl border border-gray-100 p-4">
+        <div
+          v-for="c in contacts"
+          :key="c.id"
+          class="rounded-xl border p-4 transition-colors"
+          :class="c.isRead ? 'border-gray-100' : 'border-primary/30 bg-primary/5'"
+        >
           <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <span class="font-medium text-gray-900">{{ c.name }}</span>
-            <span class="text-xs text-gray-400">{{ c.createdAt }}</span>
+            <div class="flex items-center gap-2">
+              <span v-if="!c.isRead" class="size-2 shrink-0 rounded-full bg-primary" aria-label="未讀" />
+              <span class="font-medium text-gray-900">{{ c.name }}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-gray-400">{{ c.createdAt }}</span>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                :loading="busyId === c.id"
+                @click="toggleRead(c)"
+              >
+                {{ c.isRead ? '標為未讀' : '標為已讀' }}
+              </UButton>
+            </div>
           </div>
           <div class="mt-1 flex flex-wrap gap-3 text-xs text-gray-500">
             <span v-if="c.phone">{{ c.phone }}</span>

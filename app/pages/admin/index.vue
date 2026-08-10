@@ -4,18 +4,20 @@ import type { TripSummary } from '~/types/trip'
 definePageMeta({ layout: 'admin' })
 
 const { data: trips, refresh } = await useFetch<TripSummary[]>('/api/admin/trips')
-const { data: contacts } = await useFetch<unknown[]>('/api/admin/contacts')
+const { data: contacts } = await useFetch<{ isRead: boolean }[]>('/api/admin/contacts')
 
 const publishedCount = computed(() => trips.value?.filter(t => t.status === 'published').length ?? 0)
 const draftCount = computed(() => trips.value?.filter(t => t.status === 'draft').length ?? 0)
 const batchCount = computed(() => trips.value?.reduce((sum, t) => sum + t.batches.length, 0) ?? 0)
-const contactCount = computed(() => contacts.value?.length ?? 0)
+// 顯示未讀而不是總數：總數只會一直長大，看久了就不再是待辦提示
+const unreadContactCount = computed(() => contacts.value?.filter(c => !c.isRead).length ?? 0)
 
+// 每張卡片都連到對應的管理頁，數字本身就是入口
 const stats = computed(() => [
-  { label: '啟用中行程', value: publishedCount.value, icon: 'i-lucide-check-circle-2', style: 'solid' as const },
-  { label: '已關閉行程', value: draftCount.value, icon: 'i-lucide-file-edit', style: 'dark' as const },
-  { label: '出團梯次總數', value: batchCount.value, icon: 'i-lucide-ticket', style: 'outline' as const },
-  { label: '聯絡表單留言', value: contactCount.value, icon: 'i-lucide-inbox', style: 'outline' as const }
+  { label: '啟用中行程', value: publishedCount.value, icon: 'i-lucide-check-circle-2', style: 'solid' as const, to: '/admin' },
+  { label: '已關閉行程', value: draftCount.value, icon: 'i-lucide-file-edit', style: 'dark' as const, to: '/admin' },
+  { label: '出團梯次總數', value: batchCount.value, icon: 'i-lucide-ticket', style: 'outline' as const, to: '/admin' },
+  { label: '未讀留言', value: unreadContactCount.value, icon: 'i-lucide-inbox', style: 'outline' as const, to: '/admin/contacts' }
 ])
 
 // 排序：啟用中的永遠排在前面，群組內再依選擇的欄位排
@@ -107,25 +109,20 @@ async function confirmDelete() {
           本地開發模式：尚未套用 Cloudflare Zero Trust，正式部署前請務必加上存取保護
         </p>
       </div>
-      <div class="flex flex-col gap-2 sm:flex-row">
-        <UButton to="/admin/contacts" color="neutral" variant="soft" block class="sm:w-auto">
-          聯絡表單留言
-        </UButton>
-        <UButton to="/admin/hero" color="neutral" variant="soft" block class="sm:w-auto">
-          編輯首頁 Hero
-        </UButton>
-        <UButton to="/admin/trips/new" color="primary" block class="sm:w-auto">
-          新增行程
-        </UButton>
-      </div>
+      <!-- 「聯絡表單留言」「編輯首頁 Hero」已移除：側邊欄就有入口，
+           統計卡也可以直接點進去，放在這裡只是重複 -->
+      <UButton to="/admin/trips/new" color="primary" class="sm:w-auto">
+        新增行程
+      </UButton>
     </div>
 
     <!-- 統計卡片 -->
     <div class="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <div
+      <NuxtLink
         v-for="stat in stats"
         :key="stat.label"
-        class="rounded-2xl p-4 shadow-sm"
+        :to="stat.to"
+        class="block rounded-2xl p-4 shadow-sm transition-shadow hover:shadow-md"
         :class="{
           'bg-primary text-white': stat.style === 'solid',
           'bg-gray-900 text-white': stat.style === 'dark',
@@ -148,7 +145,7 @@ async function confirmDelete() {
         <p class="mt-3 text-2xl font-bold">
           {{ stat.value }}
         </p>
-      </div>
+      </NuxtLink>
     </div>
 
     <!-- 行程列表 -->

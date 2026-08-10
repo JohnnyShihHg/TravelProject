@@ -1,19 +1,70 @@
 <script setup lang="ts">
+// 後台目前沒有任何登入驗證（見 PLANNING_NOTES.md），在補上 Cloudflare Access 之前
+// 至少要確保不被搜尋引擎收錄。robots.txt 也擋了 /admin，這裡是第二道。
+useSeoMeta({ robots: 'noindex, nofollow' })
+
 const route = useRoute()
 const mobileOpen = ref(false)
 watch(() => route.fullPath, () => { mobileOpen.value = false })
 
-const navItems = [
-  { label: '儀表板', to: '/admin', icon: 'i-lucide-layout-dashboard', match: (p: string) => p === '/admin' || p.startsWith('/admin/trips') },
-  { label: '聯絡表單留言', to: '/admin/contacts', icon: 'i-lucide-inbox', match: (p: string) => p.startsWith('/admin/contacts') },
-  { label: '首頁 Hero', to: '/admin/hero', icon: 'i-lucide-image', match: (p: string) => p.startsWith('/admin/hero') }
-]
-
-function isActive(item: (typeof navItems)[number]) {
-  return item.match(route.path)
+interface NavLink {
+  label: string
+  to: string
+  icon: string
+  /** 判斷目前路徑算不算在這一項底下（子路由也要高亮） */
+  match: (path: string) => boolean
+}
+interface NavGroup {
+  title: string
+  items: NavLink[]
 }
 
-const NAV_ROW_HEIGHT = 52
+// 分組對應實際存在的資料實體。刻意不做 Articles / Videos / Navigation / Footer
+// —— 沒有對應的資料表，放上去只會是空殼選項。
+const navGroups: NavGroup[] = [
+  {
+    title: '內容',
+    items: [
+      // 行程列表目前就在 /admin 儀表板上，還沒拆成獨立頁
+      { label: '行程', to: '/admin', icon: 'i-lucide-route', match: p => p === '/admin' || p.startsWith('/admin/trips') },
+      { label: '景點', to: '/admin/spots', icon: 'i-lucide-map-pin', match: p => p.startsWith('/admin/spots') },
+      { label: '目的地', to: '/admin/destinations', icon: 'i-lucide-globe', match: p => p.startsWith('/admin/destinations') },
+      { label: '主題標籤', to: '/admin/tags', icon: 'i-lucide-tag', match: p => p.startsWith('/admin/tags') }
+    ]
+  },
+  {
+    title: '媒體',
+    items: [
+      { label: '圖片庫', to: '/admin/media', icon: 'i-lucide-image', match: p => p.startsWith('/admin/media') }
+    ]
+  },
+  {
+    title: '網站',
+    items: [
+      { label: '首頁 Hero', to: '/admin/hero', icon: 'i-lucide-layout-template', match: p => p.startsWith('/admin/hero') },
+      { label: '聯絡表單留言', to: '/admin/contacts', icon: 'i-lucide-inbox', match: p => p.startsWith('/admin/contacts') }
+    ]
+  }
+]
+
+const isActive = (item: NavLink) => item.match(route.path)
+const groupHasActive = (group: NavGroup) => group.items.some(isActive)
+
+// 手風琴預設全部展開。曾經改成「只展開目前所在的那組」，結果進到圖片庫之後
+// 「內容」整組被收起來，要多點一次才回得去景點 —— 只有 7 個項目，全開反而好用。
+// 收合純粹是使用者想讓畫面清爽時自己按的。
+const openGroups = ref<Record<string, boolean>>(
+  Object.fromEntries(navGroups.map(g => [g.title, true]))
+)
+// 換頁時若某組被收著但目前頁面在裡面，自動打開，避免高亮項藏在收合的分組裡
+watch(() => route.path, () => {
+  for (const g of navGroups) {
+    if (groupHasActive(g)) openGroups.value[g.title] = true
+  }
+})
+function toggleGroup(title: string) {
+  openGroups.value[title] = !openGroups.value[title]
+}
 </script>
 
 <template>
@@ -21,7 +72,7 @@ const NAV_ROW_HEIGHT = 52
     <!-- 桌面版側邊欄：外層是溝槽，讓 aside 四周都不貼邊，像浮在頁面上的獨立元件 -->
     <div class="hidden shrink-0 md:sticky md:top-0 md:block md:h-screen md:p-4">
       <aside class="flex h-full w-60 flex-col rounded-[28px] bg-gray-900">
-        <div class="flex items-center gap-3 px-5 py-6">
+        <NuxtLink to="/admin" class="flex items-center gap-3 px-5 py-6">
           <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
             <UIcon name="i-lucide-compass" class="size-5 text-primary" />
           </div>
@@ -33,29 +84,39 @@ const NAV_ROW_HEIGHT = 52
               後台管理
             </p>
           </div>
-        </div>
+        </NuxtLink>
 
-        <nav class="mt-2 flex-1">
-          <div class="flex flex-col">
-            <NuxtLink
-              v-for="item in navItems"
-              :key="item.to"
-              :to="item.to"
-              class="group relative flex items-center"
-              :style="{ height: `${NAV_ROW_HEIGHT}px` }"
+        <nav class="mt-1 flex-1 overflow-y-auto px-3 pb-4">
+          <div v-for="group in navGroups" :key="group.title" class="mb-1">
+            <!-- 大標比底下的項目大且亮，讓層級一眼看得出來 -->
+            <button
+              type="button"
+              class="flex w-full items-center justify-between rounded-full px-4 py-2.5 text-left text-base font-bold text-white transition-colors hover:text-primary"
+              :aria-expanded="openGroups[group.title]"
+              @click="toggleGroup(group.title)"
             >
-              <span
-                class="absolute inset-y-1 left-3 right-3 rounded-full transition-colors"
-                :class="isActive(item) ? 'bg-white' : 'group-hover:bg-white/10'"
+              {{ group.title }}
+              <UIcon
+                name="i-lucide-chevron-down"
+                class="size-4 text-gray-500 transition-transform"
+                :class="openGroups[group.title] ? '' : '-rotate-90'"
               />
-              <span
-                class="relative flex items-center gap-3 pl-7 text-sm font-medium transition-colors"
-                :class="isActive(item) ? 'text-gray-900' : 'text-gray-300 group-hover:text-white'"
+            </button>
+
+            <div v-show="openGroups[group.title]" class="mt-0.5 space-y-0.5">
+              <NuxtLink
+                v-for="item in group.items"
+                :key="item.to"
+                :to="item.to"
+                class="ml-2 flex items-center gap-3 rounded-full px-4 py-2 text-[13px] font-medium transition-colors"
+                :class="isActive(item)
+                  ? 'bg-white text-gray-900'
+                  : 'text-gray-400 hover:bg-white/10 hover:text-white'"
               >
-                <UIcon :name="item.icon" class="size-4 shrink-0" />
+                <UIcon :name="item.icon" class="size-3.5 shrink-0" />
                 {{ item.label }}
-              </span>
-            </NuxtLink>
+              </NuxtLink>
+            </div>
           </div>
         </nav>
 
@@ -96,17 +157,22 @@ const NAV_ROW_HEIGHT = 52
           leave-from-class="translate-y-0 opacity-100"
           leave-to-class="-translate-y-2 opacity-0"
         >
-          <nav v-if="mobileOpen" class="absolute inset-x-3 top-full z-40 mt-2 space-y-1 rounded-3xl bg-gray-900 px-3 py-3 shadow-xl">
-            <NuxtLink
-              v-for="item in navItems"
-              :key="item.to"
-              :to="item.to"
-              class="flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium transition-colors"
-              :class="isActive(item) ? 'bg-white text-gray-900' : 'text-gray-300 hover:bg-white/10 hover:text-white'"
-            >
-              <UIcon :name="item.icon" class="size-4 shrink-0" />
-              {{ item.label }}
-            </NuxtLink>
+          <nav v-if="mobileOpen" class="absolute inset-x-3 top-full z-40 mt-2 rounded-3xl bg-gray-900 px-3 py-3 shadow-xl">
+            <div v-for="group in navGroups" :key="group.title" class="mb-2">
+              <p class="px-4 py-1.5 text-base font-bold text-white">
+                {{ group.title }}
+              </p>
+              <NuxtLink
+                v-for="item in group.items"
+                :key="item.to"
+                :to="item.to"
+                class="ml-2 flex items-center gap-3 rounded-full px-4 py-2 text-[13px] font-medium transition-colors"
+                :class="isActive(item) ? 'bg-white text-gray-900' : 'text-gray-400 hover:bg-white/10 hover:text-white'"
+              >
+                <UIcon :name="item.icon" class="size-3.5 shrink-0" />
+                {{ item.label }}
+              </NuxtLink>
+            </div>
             <NuxtLink
               to="/"
               class="flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white"

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { getDB } from '../../../utils/db'
-import { trips, tripTags, tags } from '../../../database/schema'
+import { trips, tripTags, tags, tripDestinations, tripSpots, destinations, spots } from '../../../database/schema'
 import { enrichTripDetail } from '../../../utils/trips'
 
 interface UpdateTripBody {
@@ -11,7 +11,13 @@ interface UpdateTripBody {
   isFeatured?: boolean
   badge?: string | null
   rank?: number
+  seoTitle?: string | null
+  seoDescription?: string | null
   tagNames?: string[]
+  /** 覆寫地點關聯；第一個是主要地點（決定麵包屑路徑） */
+  destinationIds?: number[]
+  /** 覆寫景點關聯 */
+  spotIds?: number[]
 }
 
 export default defineEventHandler(async (event) => {
@@ -31,6 +37,9 @@ export default defineEventHandler(async (event) => {
   // 空字串等同「不顯示標籤」，統一存成 null
   if (body.badge !== undefined) updates.badge = body.badge?.trim() || null
   if (body.rank !== undefined) updates.rank = body.rank
+  // SEO 覆寫留空就存 null，前台會自動回退用 title / summary 產生
+  if (body.seoTitle !== undefined) updates.seoTitle = body.seoTitle?.trim() || null
+  if (body.seoDescription !== undefined) updates.seoDescription = body.seoDescription?.trim() || null
 
   await db.update(trips).set(updates).where(eq(trips.id, id)).run()
 
@@ -39,6 +48,28 @@ export default defineEventHandler(async (event) => {
     for (const name of body.tagNames) {
       const tag = await db.select().from(tags).where(eq(tags.name, name)).get()
       if (tag) await db.insert(tripTags).values({ tripId: id, tagId: tag.id }).run()
+    }
+  }
+
+  if (body.destinationIds !== undefined) {
+    await db.delete(tripDestinations).where(eq(tripDestinations.tripId, id)).run()
+    // 陣列第一個是主要地點：一個行程可能跨多個城市，但麵包屑只能有一條路徑
+    for (const [index, destinationId] of [...new Set(body.destinationIds)].entries()) {
+      const found = await db.select({ id: destinations.id }).from(destinations)
+        .where(eq(destinations.id, destinationId)).get()
+      if (found) {
+        await db.insert(tripDestinations).values({
+          tripId: id, destinationId: found.id, isPrimary: index === 0
+        }).run()
+      }
+    }
+  }
+
+  if (body.spotIds !== undefined) {
+    await db.delete(tripSpots).where(eq(tripSpots.tripId, id)).run()
+    for (const spotId of [...new Set(body.spotIds)]) {
+      const found = await db.select({ id: spots.id }).from(spots).where(eq(spots.id, spotId)).get()
+      if (found) await db.insert(tripSpots).values({ tripId: id, spotId: found.id }).run()
     }
   }
 

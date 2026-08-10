@@ -60,7 +60,6 @@ const buttons = computed<ToolbarButton[]>(() => {
 interface MediaItem {
   id: number
   url: string
-  category: string | null
 }
 
 const imagePanelOpen = ref(false)
