@@ -1,5 +1,9 @@
 <script setup lang="ts">
-useSeoMeta({ title: '關於無穹 - 無穹旅行社' })
+usePageSeo({
+  title: '關於無穹',
+  description: '無穹旅行社的品牌故事與帶團理念。我們專注在小團深度旅遊，帶你走進每一段值得記住的旅程。',
+  path: '/about'
+})
 </script>
 
 <template>

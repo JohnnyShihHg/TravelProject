@@ -1,7 +1,18 @@
 <script setup lang="ts">
-import type { TripDetail } from '~/types/trip'
+import type { TripDetail, Crumb } from '~/types/trip'
 
 const props = defineProps<{ trip: TripDetail }>()
+
+// 首頁 › 日本 › 京都 › 行程。primaryDestination 是那筆 isPrimary 的地點，
+// 一個行程可能跨多個城市，但麵包屑只能有一條路徑。
+const crumbs = computed<Crumb[]>(() => {
+  const list: Crumb[] = [{ label: '首頁', to: '/' }]
+  const primary = props.trip.primaryDestination
+  if (primary?.parent) list.push({ label: primary.parent.name, to: `/destinations/${primary.parent.slug}` })
+  if (primary) list.push({ label: primary.name, to: `/destinations/${primary.slug}` })
+  list.push({ label: props.trip.title })
+  return list
+})
 
 const gallery = computed(() => props.trip.images.filter(i => !i.isCover))
 const flightBlock = computed(() => props.trip.blocks.find(b => b.type === 'flight'))
@@ -11,10 +22,11 @@ const showAllBatches = ref(false)
 const visibleBatches = computed(() => (showAllBatches.value ? sortedBatches.value : sortedBatches.value.slice(0, 1)))
 
 const showBookingBar = ref(false)
-const barBatchId = ref<number | null>(null)
+// USelect 的 v-model 不吃 null，用 undefined 表示「還沒選」
+const barBatchId = ref<number | undefined>(undefined)
 watchEffect(() => {
-  if (barBatchId.value === null && sortedBatches.value.length) {
-    barBatchId.value = sortedBatches.value[0].id
+  if (barBatchId.value === undefined && sortedBatches.value.length) {
+    barBatchId.value = sortedBatches.value[0]?.id
   }
 })
 const barBatch = computed(() => sortedBatches.value.find(b => b.id === barBatchId.value) ?? sortedBatches.value[0])
@@ -28,6 +40,7 @@ let observer: IntersectionObserver | null = null
 onMounted(() => {
   if (!bookingTrigger.value) return
   observer = new IntersectionObserver(([entry]) => {
+    if (!entry) return
     showBookingBar.value = !entry.isIntersecting && entry.boundingClientRect.top < 0
   }, { threshold: 0 })
   observer.observe(bookingTrigger.value)
@@ -79,9 +92,28 @@ onBeforeUnmount(() => observer?.disconnect())
           <UBadge v-if="trip.badge" color="warning" variant="solid">
             {{ trip.badge }}
           </UBadge>
-          <UBadge v-for="tag in trip.tags" :key="tag.id" color="primary" variant="solid">
-            {{ tag.name }}
-          </UBadge>
+          <!-- 地點與景點連到各自的 landing page，建立 行程 ⇄ 目的地 ⇄ 景點 的內部連結。
+               UBadge 沒有 to 這個 prop（會被當成一般屬性輸出成 <span to="...">，不是連結），
+               所以外面一定要包 NuxtLink。 -->
+          <NuxtLink v-for="d in trip.destinations" :key="`d-${d.id}`" :to="`/destinations/${d.slug}`">
+            <UBadge color="primary" variant="solid" class="transition-opacity hover:opacity-85">
+              {{ d.name }}
+            </UBadge>
+          </NuxtLink>
+          <NuxtLink v-for="s in trip.spots" :key="`s-${s.id}`" :to="`/spots/${s.slug}`">
+            <UBadge color="info" variant="solid" class="transition-opacity hover:opacity-85">
+              {{ s.name }}
+            </UBadge>
+          </NuxtLink>
+          <NuxtLink
+            v-for="tag in trip.tags"
+            :key="`t-${tag.id}`"
+            :to="{ path: '/trips', query: { tag: tag.slug } }"
+          >
+            <UBadge color="neutral" variant="solid" class="transition-opacity hover:opacity-85">
+              {{ tag.name }}
+            </UBadge>
+          </NuxtLink>
         </div>
         <h1 class="mt-3 text-2xl font-bold text-white sm:text-4xl">
           {{ trip.title }}
@@ -90,6 +122,8 @@ onBeforeUnmount(() => observer?.disconnect())
     </div>
 
     <div class="mx-auto max-w-[1200px] px-4 py-10 sm:px-6">
+      <AppBreadcrumb :items="crumbs" class="mb-6" />
+
       <section class="relative">
         <div ref="bookingTrigger" class="pointer-events-none absolute inset-x-0" style="top: 80%" />
 

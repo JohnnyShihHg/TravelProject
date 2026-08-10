@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { TripSummary } from '~/types/trip'
 
-useSeoMeta({ title: '聯絡我們 - 無穹旅行社' })
+usePageSeo({
+  title: '聯絡我們',
+  description: '想詢問行程細節、包團或機票代訂？留下聯絡方式，無穹旅行社會盡快與你聯繫。',
+  path: '/contact'
+})
 
 const route = useRoute()
 const { data: trips } = await useFetch<TripSummary[]>('/api/trips')

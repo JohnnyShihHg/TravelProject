@@ -17,9 +17,21 @@ export default defineNuxtConfig({
     colorMode: false
   },
 
+  app: {
+    head: {
+      // 全站中文，宣告出來讓搜尋引擎與螢幕閱讀器知道
+      htmlAttrs: { lang: 'zh-Hant-TW' }
+    }
+  },
+
   runtimeConfig: {
     telegramBotToken: '',
-    telegramChatId: ''
+    telegramChatId: '',
+    public: {
+      // canonical、og:url、sitemap 都需要絕對網址。
+      // 換自訂網域時設環境變數 NUXT_PUBLIC_SITE_URL 即可，不用改程式。
+      siteUrl: 'https://wuqiong-travel.nadia861130.workers.dev'
+    }
   }
 
   // Cloudflare preset (nitro.preset: 'cloudflare_module') is intentionally NOT set here.

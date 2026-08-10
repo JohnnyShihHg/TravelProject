@@ -20,6 +20,14 @@ const activeFilters = computed(() => {
   return list
 })
 
+// canonical 刻意固定指向 /trips（不帶 query）：?tag=、?scope=、?q= 產生的是同一批內容的
+// 不同檢視，讓搜尋引擎知道正本是哪一頁，避免被當成重複內容。
+usePageSeo({
+  title: '探索行程',
+  description: '查看無穹旅行社所有出團行程與出發日期，依目的地、主題或出團月份挑選適合你的旅程。',
+  path: '/trips'
+})
+
 const { data: batches } = await useFetch<CalendarBatch[]>('/api/batches')
 
 const { data: trips, refresh } = await useFetch<TripSummary[]>('/api/trips', {

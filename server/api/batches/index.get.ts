@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
       departureDate: batches.departureDate,
       returnDate: batches.returnDate,
       priceInfo: batches.priceInfo,
+      priceFrom: batches.priceFrom,
       groupSize: batches.groupSize,
       tripId: trips.id,
       tripSlug: trips.slug,

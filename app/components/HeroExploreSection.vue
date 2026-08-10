@@ -20,8 +20,8 @@ const pending = computed(() => status.value === 'pending')
 
 const tripCards = computed(() => (trips.value ?? []).slice(0, MAX_CARDS))
 
+// tags 拆表後只剩主題標籤，不需要再過濾 category
 const themeCards = computed(() => (tags.value ?? [])
-  .filter(t => t.category === 'type')
   .map(t => ({
     ...t,
     count: (trips.value ?? []).filter(trip => trip.tags.some(x => x.id === t.id)).length

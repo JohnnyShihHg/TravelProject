@@ -3,7 +3,11 @@ import type { TripSummary } from '~/types/trip'
 
 const props = defineProps<{ trip: TripSummary }>()
 
-const primaryTag = props.trip.tags[0]?.name ?? '行程'
+// 卡片標題上方那行小字顯示地點（東京／京都…）比顯示主題（賞花）好認。
+// 拆表前 tags[0] 剛好是地點標籤，現在要明確從 destinations 取。
+const primaryLabel = computed(() =>
+  props.trip.primaryDestination?.name ?? props.trip.tags[0]?.name ?? '行程'
+)
 </script>
 
 <template>
@@ -21,7 +25,7 @@ const primaryTag = props.trip.tags[0]?.name ?? '行程'
     </div>
     <div class="p-4">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="text-xs font-medium text-primary">{{ primaryTag }}</span>
+        <span class="text-xs font-medium text-primary">{{ primaryLabel }}</span>
         <UBadge v-if="trip.badge" color="warning" variant="subtle" size="sm">
           {{ trip.badge }}
         </UBadge>
