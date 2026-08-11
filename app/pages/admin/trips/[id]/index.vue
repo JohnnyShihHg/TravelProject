@@ -16,6 +16,7 @@ const { data: allDestinations } = await useFetch<AdminDestination[]>('/api/admin
 const { data: allSpots } = await useFetch<AdminSpot[]>('/api/admin/spots')
 
 const form = reactive({
+  slug: '',
   title: '',
   summary: '',
   days: 1,
@@ -50,6 +51,7 @@ const badgeSelect = computed({
 
 watchEffect(() => {
   if (!trip.value) return
+  form.slug = trip.value.slug
   form.title = trip.value.title
   form.summary = trip.value.summary
   form.days = trip.value.days
@@ -111,6 +113,9 @@ async function createTag() {
   }
 }
 
+// slug 預設唯讀顯示，改網址會讓舊連結失效，不該像改標題那樣隨手可動
+const editingSlug = ref(false)
+
 const saving = ref(false)
 const saved = ref(false)
 const saveError = ref('')
@@ -130,6 +135,7 @@ async function save() {
       body: { ...form, destinationIds, spotIds: [...selectedSpotIds.value] }
     })
     saved.value = true
+    editingSlug.value = false
     await refresh()
     setTimeout(() => { saved.value = false }, 2500)
   } catch (err) {
@@ -188,6 +194,11 @@ async function addBatch() {
 async function removeBatch(batch: TripBatch) {
   await $fetch(`/api/admin/batches/${batch.id}`, { method: 'DELETE' })
   await refresh()
+}
+
+// 跟前台 TripDetailView 的模板一致：主價格只由 priceFrom 產生
+function formatPrice(n: number | null | undefined) {
+  return n ? `NT$ ${n.toLocaleString('zh-TW')} 起` : ''
 }
 
 // 搜尋結果預覽：跟前台 usePageSeo 的推導規則一致，留空就回退用標題／簡介
@@ -349,7 +360,8 @@ const stages = computed<Stage[]>(() => [
                 >
                   <div>
                     <span class="font-medium text-gray-900">{{ batch.departureDate }} ～ {{ batch.returnDate }}</span>
-                    <span class="ml-3 text-gray-500">{{ batch.priceInfo }}</span>
+                    <span v-if="batch.priceFrom" class="ml-3 font-medium text-primary">{{ formatPrice(batch.priceFrom) }}</span>
+                    <span v-if="batch.priceInfo" class="ml-3 text-gray-500">{{ batch.priceInfo }}</span>
                     <span v-if="batch.groupSize" class="ml-3 text-gray-500">成團人數 {{ batch.groupSize }}</span>
                   </div>
                   <UButton size="xs" color="error" variant="soft" class="self-start sm:self-auto" @click="removeBatch(batch)">
@@ -377,11 +389,14 @@ const stages = computed<Stage[]>(() => [
                 <UFormField label="集合地點">
                   <UInput v-model="newBatch.meetingPoint" class="w-full" />
                 </UFormField>
-                <UFormField label="費用說明" help="前台顯示的文字">
-                  <UInput v-model="newBatch.priceInfo" placeholder="NT$ 42,900 起" class="w-full" />
-                </UFormField>
-                <UFormField label="價格數字" help="只填數字，用於搜尋結果顯示價格" class="sm:col-span-3 sm:max-w-xs">
+                <UFormField label="每人費用（新台幣）" help="只填數字。前台會顯示成 NT$ 42,900 起" class="sm:col-span-3 sm:max-w-xs">
                   <UInput v-model.number="newBatch.priceFrom" type="number" placeholder="42900" class="w-full" />
+                  <p v-if="newBatch.priceFrom" class="mt-1 text-xs text-gray-400">
+                    前台顯示：{{ formatPrice(newBatch.priceFrom) }}
+                  </p>
+                </UFormField>
+                <UFormField label="費用備註（選填）" help="早鳥價、兩人成行這類補充說明。價格不要寫在這裡。" class="sm:col-span-3">
+                  <UInput v-model="newBatch.priceInfo" placeholder="例如：早鳥報名折 2,000" class="w-full" />
                 </UFormField>
                 <UButton class="sm:col-span-3" color="neutral" variant="soft" :loading="addingBatch" @click="addBatch">
                   新增梯次
@@ -496,12 +511,37 @@ const stages = computed<Stage[]>(() => [
             </div>
 
             <div class="border-t border-gray-100 pt-4 text-xs">
-              <p class="text-gray-400">
-                網址代稱
-              </p>
-              <p class="mt-0.5 break-all font-mono text-gray-700">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-gray-400">
+                  網址代稱
+                </p>
+                <UButton
+                  v-if="!editingSlug"
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-pencil"
+                  aria-label="編輯網址代稱"
+                  @click="editingSlug = true"
+                />
+              </div>
+
+              <p v-if="!editingSlug" class="mt-0.5 break-all font-mono text-gray-700">
                 /trips/{{ trip.slug }}
               </p>
+              <div v-else class="mt-1 space-y-1.5">
+                <div class="flex items-center gap-1 font-mono">
+                  <span class="shrink-0 text-gray-400">/trips/</span>
+                  <UInput v-model="form.slug" size="xs" class="w-full" />
+                </div>
+                <p class="text-amber-600">
+                  改網址會讓舊連結失效，已經分享出去的連結會找不到頁面。
+                </p>
+                <UButton size="xs" color="neutral" variant="soft" @click="editingSlug = false; form.slug = trip.slug">
+                  取消
+                </UButton>
+              </div>
+
               <p class="mt-3 text-gray-400">
                 最後更新
               </p>

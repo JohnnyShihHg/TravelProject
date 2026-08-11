@@ -7,6 +7,7 @@ interface CreateBatchBody {
   flightInfo?: string
   meetingPoint?: string
   priceInfo?: string
+  priceFrom?: number
   groupSize?: number
 }
 
@@ -26,6 +27,7 @@ export default defineEventHandler(async (event) => {
     flightInfo: body.flightInfo || null,
     meetingPoint: body.meetingPoint || null,
     priceInfo: body.priceInfo || null,
+    priceFrom: body.priceFrom ?? null,
     groupSize: body.groupSize ?? null
   }).returning().get()
 })

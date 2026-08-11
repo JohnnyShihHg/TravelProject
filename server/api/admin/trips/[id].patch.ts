@@ -4,6 +4,7 @@ import { trips, tripTags, tags, tripDestinations, tripSpots, destinations, spots
 import { enrichTripDetail } from '../../../utils/trips'
 
 interface UpdateTripBody {
+  slug?: string
   title?: string
   summary?: string
   days?: number
@@ -29,6 +30,19 @@ export default defineEventHandler(async (event) => {
   if (!existing) throw createError({ statusCode: 404, statusMessage: '找不到行程' })
 
   const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() }
+  if (body.slug !== undefined) {
+    const next = body.slug.trim()
+    if (!next) throw createError({ statusCode: 400, statusMessage: '網址代稱不能留空' })
+    // 只允許小寫英數與連字號——這是修中文 slug 壞資料（例如「北江」）的入口，不能再放中文進來
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(next)) {
+      throw createError({ statusCode: 400, statusMessage: '網址代稱只能用小寫英文、數字與連字號' })
+    }
+    if (next !== existing.slug) {
+      const dup = await db.select({ id: trips.id }).from(trips).where(eq(trips.slug, next)).get()
+      if (dup) throw createError({ statusCode: 409, statusMessage: '這個網址代稱已經被使用' })
+      updates.slug = next
+    }
+  }
   if (body.title !== undefined) updates.title = body.title.trim()
   if (body.summary !== undefined) updates.summary = body.summary
   if (body.days !== undefined) updates.days = body.days

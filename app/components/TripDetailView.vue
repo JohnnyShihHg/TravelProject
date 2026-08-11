@@ -35,6 +35,12 @@ const barBatchOptions = computed(() => sortedBatches.value.map(b => ({
   value: b.id
 })))
 
+// 客戶一律台幣付款，主價格由 priceFrom（數字）套固定模板；priceInfo 降格為選填備註
+// （早鳥價、兩人成行這類非制式說明），不再承載價格本身
+function formatPrice(n: number | null) {
+  return n ? `NT$ ${n.toLocaleString('zh-TW')} 起` : ''
+}
+
 const bookingTrigger = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 onMounted(() => {
@@ -63,8 +69,8 @@ onBeforeUnmount(() => observer?.disconnect())
         class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-100 bg-white shadow-lg md:top-16 md:bottom-auto md:border-t-0 md:border-b"
       >
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:px-6 lg:px-8">
-          <p v-if="barBatch.priceInfo" class="shrink-0 text-base font-bold text-primary">
-            {{ barBatch.priceInfo }}
+          <p v-if="barBatch.priceFrom" class="shrink-0 text-base font-bold text-primary">
+            {{ formatPrice(barBatch.priceFrom) }}
           </p>
 
           <div class="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3">
@@ -152,7 +158,10 @@ onBeforeUnmount(() => observer?.disconnect())
                   <dt>成團人數</dt><dd>{{ batch.groupSize }} 人</dd>
                 </div>
               </dl>
-              <p v-if="batch.priceInfo" class="mt-2 text-base font-bold text-primary">
+              <p v-if="batch.priceFrom" class="mt-2 text-base font-bold text-primary">
+                {{ formatPrice(batch.priceFrom) }}
+              </p>
+              <p v-if="batch.priceInfo" class="mt-0.5 text-xs text-gray-500">
                 {{ batch.priceInfo }}
               </p>
             </div>

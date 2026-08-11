@@ -8,6 +8,7 @@ interface UpdateBatchBody {
   flightInfo?: string
   meetingPoint?: string
   priceInfo?: string
+  priceFrom?: number
   groupSize?: number
 }
 
