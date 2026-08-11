@@ -30,8 +30,22 @@ onMounted(() => {
   }, { rootMargin: '-120px 0px -55% 0px', threshold: 0 })
 
   for (const el of sections) observer.observe(el)
+
+  // 最後一段一旦落在下方 55% 的忽略區就永遠無法被 observer 選中，
+  // 捲到頁面底部時強制高亮最後一段，蓋過 observer 的判斷。
+  window.addEventListener('scroll', onScroll, { passive: true })
 })
-onBeforeUnmount(() => observer?.disconnect())
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  window.removeEventListener('scroll', onScroll)
+})
+
+function onScroll() {
+  const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
+  if (atBottom && props.stages.length > 0) {
+    activeId.value = props.stages[props.stages.length - 1]!.id
+  }
+}
 
 function goTo(id: string) {
   const el = document.getElementById(id)

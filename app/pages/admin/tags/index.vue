@@ -7,6 +7,7 @@ interface AdminTag {
 }
 
 definePageMeta({ layout: 'admin' })
+useHead({ title: '主題標籤' })
 
 const { data: tags, refresh } = await useFetch<AdminTag[]>('/api/admin/tags')
 

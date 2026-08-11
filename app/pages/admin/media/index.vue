@@ -2,6 +2,7 @@
 import type { MediaLibraryItem, AdminDestination, AdminSpot } from '~/types/trip'
 
 definePageMeta({ layout: 'admin' })
+useHead({ title: '圖片庫' })
 
 const { data: library, refresh } = await useFetch<MediaLibraryItem[]>('/api/admin/media')
 const { data: destinations } = await useFetch<AdminDestination[]>('/api/admin/destinations')

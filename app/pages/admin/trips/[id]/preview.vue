@@ -15,6 +15,8 @@ const { data: trip, error } = await useFetch<TripDetail>(`/api/admin/trips/${id}
 if (error.value) {
   throw createError({ statusCode: 404, statusMessage: '找不到這個行程' })
 }
+
+useHead({ title: () => `預覽：${trip.value?.title ?? ''}｜無穹旅行社 後台` })
 </script>
 
 <template>

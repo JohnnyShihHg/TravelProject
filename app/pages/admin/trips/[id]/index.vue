@@ -10,6 +10,7 @@ const router = useRouter()
 const id = Number(route.params.id)
 
 const { data: trip, refresh } = await useFetch<TripDetail>(`/api/admin/trips/${id}`)
+useHead({ title: () => `編輯：${trip.value?.title ?? ''}` })
 const { data: allTags, refresh: refreshTags } = await useFetch<TripTag[]>('/api/tags')
 const { data: allDestinations } = await useFetch<AdminDestination[]>('/api/admin/destinations')
 const { data: allSpots } = await useFetch<AdminSpot[]>('/api/admin/spots')
@@ -155,7 +156,8 @@ async function removeTrip() {
   deleting.value = true
   try {
     await $fetch(`/api/admin/trips/${id}`, { method: 'DELETE' })
-    await router.push('/admin/trips')
+    // /admin/trips 獨立列表頁還沒做（見 TASK C6），行程列表目前在 /admin 儀表板上
+    await router.push('/admin')
   } finally {
     deleting.value = false
   }

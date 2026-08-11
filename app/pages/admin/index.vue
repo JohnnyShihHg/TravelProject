@@ -2,6 +2,7 @@
 import type { TripSummary } from '~/types/trip'
 
 definePageMeta({ layout: 'admin' })
+useHead({ title: '行程管理' })
 
 const { data: trips, refresh } = await useFetch<TripSummary[]>('/api/admin/trips')
 const { data: contacts } = await useFetch<{ isRead: boolean }[]>('/api/admin/contacts')

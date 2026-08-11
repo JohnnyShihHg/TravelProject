@@ -2,6 +2,7 @@
 import type { TripTag } from '~/types/trip'
 
 definePageMeta({ layout: 'admin' })
+useHead({ title: '新增行程' })
 
 const router = useRouter()
 const { data: allTags, refresh: refreshTags } = await useFetch<TripTag[]>('/api/tags')

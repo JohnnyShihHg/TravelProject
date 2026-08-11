@@ -2,6 +2,7 @@
 import type { HeroContent } from '~/types/trip'
 
 definePageMeta({ layout: 'admin' })
+useHead({ title: '首頁 Hero' })
 
 const { data: hero } = await useFetch<HeroContent>('/api/hero')
 

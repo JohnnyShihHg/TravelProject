@@ -1,5 +1,6 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
+useHead({ title: '聯絡表單留言' })
 
 interface ContactRow {
   id: number
@@ -72,8 +73,14 @@ async function markAllRead() {
         >
           <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <div class="flex items-center gap-2">
-              <span v-if="!c.isRead" class="size-2 shrink-0 rounded-full bg-primary" aria-label="未讀" />
               <span class="font-medium text-gray-900">{{ c.name }}</span>
+              <UBadge
+                :color="c.isRead ? 'neutral' : 'primary'"
+                variant="subtle"
+                size="sm"
+              >
+                {{ c.isRead ? '已讀' : '未讀' }}
+              </UBadge>
             </div>
             <div class="flex items-center gap-3">
               <span class="text-xs text-gray-400">{{ c.createdAt }}</span>
@@ -81,11 +88,11 @@ async function markAllRead() {
                 size="xs"
                 color="neutral"
                 variant="ghost"
+                :icon="c.isRead ? 'i-lucide-mail' : 'i-lucide-mail-open'"
+                :aria-label="c.isRead ? '標為未讀' : '標為已讀'"
                 :loading="busyId === c.id"
                 @click="toggleRead(c)"
-              >
-                {{ c.isRead ? '標為未讀' : '標為已讀' }}
-              </UButton>
+              />
             </div>
           </div>
           <div class="mt-1 flex flex-wrap gap-3 text-xs text-gray-500">

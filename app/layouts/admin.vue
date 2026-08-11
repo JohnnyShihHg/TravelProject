@@ -2,6 +2,7 @@
 // 後台目前沒有任何登入驗證（見 PLANNING_NOTES.md），在補上 Cloudflare Access 之前
 // 至少要確保不被搜尋引擎收錄。robots.txt 也擋了 /admin，這裡是第二道。
 useSeoMeta({ robots: 'noindex, nofollow' })
+useHead({ titleTemplate: title => title ? `${title}｜無穹旅行社 後台` : '後台管理｜無穹旅行社' })
 
 const route = useRoute()
 const mobileOpen = ref(false)
