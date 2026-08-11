@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TripSummary, CalendarBatch } from '~/types/trip'
+import type { TripSummary, CalendarBatch, TripTag, Destination, Spot } from '~/types/trip'
 
 const route = useRoute()
 const router = useRouter()
@@ -7,18 +7,11 @@ const router = useRouter()
 const q = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const selectedDate = ref<string | null>(null)
 
-// 首頁 hero 會帶 scope（國內/國外）與 tag（主題）進來
+// 首頁 hero 會帶 scope（國內/國外）與 tag（主題／地點／景點的 slug）進來
 const scope = computed(() => (route.query.scope === 'domestic' || route.query.scope === 'overseas' ? route.query.scope : ''))
 const tag = computed(() => (typeof route.query.tag === 'string' ? route.query.tag : ''))
 
 const SCOPE_LABEL: Record<string, string> = { domestic: '國內線', overseas: '國外線' }
-
-const activeFilters = computed(() => {
-  const list: string[] = []
-  if (scope.value) list.push(SCOPE_LABEL[scope.value]!)
-  if (tag.value) list.push(tag.value)
-  return list
-})
 
 // canonical 刻意固定指向 /trips（不帶 query）：?tag=、?scope=、?q= 產生的是同一批內容的
 // 不同檢視，讓搜尋引擎知道正本是哪一頁，避免被當成重複內容。
@@ -29,6 +22,28 @@ usePageSeo({
 })
 
 const { data: batches } = await useFetch<CalendarBatch[]>('/api/batches')
+const { data: allTags } = await useFetch<TripTag[]>('/api/tags')
+const { data: allDestinations } = await useFetch<Destination[]>('/api/destinations')
+const { data: allSpots } = await useFetch<Spot[]>('/api/spots')
+
+// tag 參數同時可能是主題標籤、地點或景點的 slug（見 server/api/trips/index.get.ts），
+// 顯示時要把 slug 換回中文，不然使用者會看到英文網址片段
+const tagLabel = computed(() => {
+  const raw = tag.value
+  if (!raw) return ''
+  const found = (allTags.value ?? []).find(t => t.slug === raw || t.name === raw)
+    ?? (allDestinations.value ?? []).find(d => d.slug === raw || d.name === raw)
+    ?? (allSpots.value ?? []).find(s => s.slug === raw || s.name === raw)
+  return found?.name ?? raw
+})
+
+// tag 已經呈現在搜尋 bar 裡（見下方 watch），篩選條件列只保留 scope，
+// 避免同一件事講兩次
+const activeFilters = computed(() => {
+  const list: string[] = []
+  if (scope.value) list.push(SCOPE_LABEL[scope.value]!)
+  return list
+})
 
 const { data: trips, refresh } = await useFetch<TripSummary[]>('/api/trips', {
   query: computed(() => ({
@@ -38,7 +53,22 @@ const { data: trips, refresh } = await useFetch<TripSummary[]>('/api/trips', {
   }))
 })
 
+// 從 tag 切過來時，把中文名稱帶進搜尋框，製造「透過搜尋 bar 查到的」錯覺；
+// 底層仍然是靠 tag= 精確篩選（見上面的 query），這裡純粹是顯示
+const isTagDerived = ref(false)
+watchEffect(() => {
+  if (tag.value && tagLabel.value) {
+    isTagDerived.value = true
+    q.value = tagLabel.value
+  }
+})
+
+function onSearchInput() {
+  isTagDerived.value = false
+}
+
 function clearFilters() {
+  isTagDerived.value = false
   router.replace({ query: q.value ? { q: q.value } : {} })
 }
 
@@ -51,8 +81,37 @@ function onSelectDate(date: string | null) {
   selectedDate.value = date
 }
 
+// 輪播式 placeholder：搜尋框空著時，示範詞會自己輪播（參考 Klook），
+// 使用者看到喜歡的詞直接按搜尋就以那個詞查詢
+const placeholderWords = computed(() => {
+  const countries = (allDestinations.value ?? []).filter(d => d.type === 'country').map(d => d.name)
+  const themes = (allTags.value ?? []).map(t => t.name)
+  const words = [...countries, ...themes].slice(0, 8)
+  return words.length ? words : ['地點、景點或行程類型']
+})
+const placeholderIndex = ref(0)
+const currentPlaceholder = computed(() => placeholderWords.value[placeholderIndex.value % placeholderWords.value.length] ?? '')
+let placeholderTimer: ReturnType<typeof setInterval> | undefined
+if (import.meta.client) {
+  placeholderTimer = setInterval(() => {
+    placeholderIndex.value = (placeholderIndex.value + 1) % placeholderWords.value.length
+  }, 2500)
+}
+onBeforeUnmount(() => { if (placeholderTimer) clearInterval(placeholderTimer) })
+
 function submitSearch() {
-  router.replace({ query: { ...route.query, q: q.value || undefined } })
+  // 搜尋框是空的就用目前輪播顯示的詞去查，讓 placeholder 真的「查得到」
+  const keyword = q.value.trim() || currentPlaceholder.value
+  q.value = keyword
+
+  // 還沒被使用者手動改過（例如剛從 tag 連結切過來、還沒動輸入框），
+  // 維持原本的 tag= 精確篩選；只有手動改過內容才切換成 q= 模糊搜尋、丟掉 tag
+  if (!isTagDerived.value) {
+    const nextQuery: Record<string, string> = {}
+    if (scope.value) nextQuery.scope = scope.value
+    if (keyword) nextQuery.q = keyword
+    router.replace({ query: nextQuery })
+  }
   refresh()
 }
 </script>
@@ -76,12 +135,32 @@ function submitSearch() {
           <div class="flex flex-col justify-center gap-4 lg:min-h-full">
             <form class="flex w-full flex-row items-center gap-2 rounded-full bg-white p-2 shadow-lg" @submit.prevent="submitSearch">
               <UIcon name="i-lucide-search" class="ml-3 size-5 shrink-0 text-gray-400" />
-              <input
-                v-model="q"
-                type="text"
-                placeholder="搜尋地點、景點或行程類型"
-                class="w-full min-w-0 border-none bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
-              >
+              <div class="relative min-w-0 flex-1">
+                <input
+                  v-model="q"
+                  type="text"
+                  class="w-full min-w-0 border-none bg-transparent text-sm text-gray-900 outline-none"
+                  @input="onSearchInput"
+                >
+                <!-- 空白時疊一層輪播式提示詞，取代靜態 placeholder；q 有值時讓開 -->
+                <Transition
+                  enter-active-class="transition duration-300 ease-out"
+                  enter-from-class="opacity-0"
+                  enter-to-class="opacity-100"
+                  leave-active-class="transition duration-200 ease-in"
+                  leave-from-class="opacity-100"
+                  leave-to-class="opacity-0"
+                  mode="out-in"
+                >
+                  <span
+                    v-if="!q"
+                    :key="currentPlaceholder"
+                    class="pointer-events-none absolute inset-y-0 left-0 flex items-center whitespace-nowrap text-sm text-gray-400"
+                  >
+                    搜尋「{{ currentPlaceholder }}」
+                  </span>
+                </Transition>
+              </div>
               <UButton type="submit" color="primary" variant="solid" size="lg" class="shrink-0 whitespace-nowrap rounded-full px-6">
                 搜尋
               </UButton>

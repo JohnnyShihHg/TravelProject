@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm'
 import { getDB } from '../../../utils/db'
-import { trips, tripTags, tags, tripDestinations, tripSpots, destinations, spots } from '../../../database/schema'
+import { trips, tripTags, tags } from '../../../database/schema'
 import { enrichTripDetail } from '../../../utils/trips'
+import { setTripDestinations, setTripSpots } from '../../../utils/places'
 
 interface UpdateTripBody {
   slug?: string
@@ -65,27 +66,9 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (body.destinationIds !== undefined) {
-    await db.delete(tripDestinations).where(eq(tripDestinations.tripId, id)).run()
-    // 陣列第一個是主要地點：一個行程可能跨多個城市，但麵包屑只能有一條路徑
-    for (const [index, destinationId] of [...new Set(body.destinationIds)].entries()) {
-      const found = await db.select({ id: destinations.id }).from(destinations)
-        .where(eq(destinations.id, destinationId)).get()
-      if (found) {
-        await db.insert(tripDestinations).values({
-          tripId: id, destinationId: found.id, isPrimary: index === 0
-        }).run()
-      }
-    }
-  }
-
-  if (body.spotIds !== undefined) {
-    await db.delete(tripSpots).where(eq(tripSpots.tripId, id)).run()
-    for (const spotId of [...new Set(body.spotIds)]) {
-      const found = await db.select({ id: spots.id }).from(spots).where(eq(spots.id, spotId)).get()
-      if (found) await db.insert(tripSpots).values({ tripId: id, spotId: found.id }).run()
-    }
-  }
+  // 陣列第一個是主要地點：一個行程可能跨多個城市，但麵包屑只能有一條路徑
+  if (body.destinationIds !== undefined) await setTripDestinations(db, id, body.destinationIds)
+  if (body.spotIds !== undefined) await setTripSpots(db, id, body.spotIds)
 
   const updated = (await db.select().from(trips).where(eq(trips.id, id)).get())!
   return enrichTripDetail(db, updated)

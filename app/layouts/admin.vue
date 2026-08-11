@@ -24,10 +24,15 @@ interface NavGroup {
 // —— 沒有對應的資料表，放上去只會是空殼選項。
 const navGroups: NavGroup[] = [
   {
+    title: '總覽',
+    items: [
+      { label: '儀表板', to: '/admin', icon: 'i-lucide-layout-dashboard', match: p => p === '/admin' }
+    ]
+  },
+  {
     title: '內容',
     items: [
-      // 行程列表目前就在 /admin 儀表板上，還沒拆成獨立頁
-      { label: '行程', to: '/admin', icon: 'i-lucide-route', match: p => p === '/admin' || p.startsWith('/admin/trips') },
+      { label: '行程', to: '/admin/trips', icon: 'i-lucide-route', match: p => p.startsWith('/admin/trips') },
       { label: '景點', to: '/admin/spots', icon: 'i-lucide-map-pin', match: p => p.startsWith('/admin/spots') },
       { label: '目的地', to: '/admin/destinations', icon: 'i-lucide-globe', match: p => p.startsWith('/admin/destinations') },
       { label: '主題標籤', to: '/admin/tags', icon: 'i-lucide-tag', match: p => p.startsWith('/admin/tags') }

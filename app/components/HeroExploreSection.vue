@@ -113,7 +113,7 @@ function canLoop(count: number) {
       :ui="carouselUi"
     >
       <NuxtLink
-        :to="{ path: '/trips', query: { tag: item.name } }"
+        :to="{ path: '/trips', query: { tag: item.slug } }"
         class="group flex h-full flex-col justify-between rounded-xl border border-gray-100 p-6 shadow-sm transition hover:border-primary/40 hover:shadow-md"
       >
         <UIcon name="i-lucide-compass" class="size-6 text-primary" />

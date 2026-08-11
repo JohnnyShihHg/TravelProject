@@ -1,7 +1,7 @@
 import { eq, desc, asc, inArray } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import type { DB } from './db'
-import { destinations, spots, media, mediaDestinations, mediaSpots } from '../database/schema'
+import { destinations, spots, media, mediaDestinations, mediaSpots, tripDestinations, tripSpots } from '../database/schema'
 import { listPublishedTrips } from './trips'
 
 // 資料量很小（一年約 20 團、地點不到十個），所以關聯過濾直接在 JS 做，
@@ -117,6 +117,31 @@ export async function getDestinationDetail(db: DB, slug: string) {
     spots: allSpots.filter(s => s.destinationId !== null && scopeIds.has(s.destinationId)),
     trips: publishedTrips.filter(t => t.destinations.some(d => scopeIds.has(d.id))),
     photos
+  }
+}
+
+/**
+ * 覆寫一個行程的地點／景點關聯，新增與編輯共用（陣列第一個地點是主要地點，
+ * 決定前台麵包屑路徑）。呼叫端只在對應的欄位有傳值時才呼叫，全覆寫、不做差異比對。
+ */
+export async function setTripDestinations(db: DB, tripId: number, destinationIds: number[]) {
+  await db.delete(tripDestinations).where(eq(tripDestinations.tripId, tripId)).run()
+  for (const [index, destinationId] of [...new Set(destinationIds)].entries()) {
+    const found = await db.select({ id: destinations.id }).from(destinations)
+      .where(eq(destinations.id, destinationId)).get()
+    if (found) {
+      await db.insert(tripDestinations).values({
+        tripId, destinationId: found.id, isPrimary: index === 0
+      }).run()
+    }
+  }
+}
+
+export async function setTripSpots(db: DB, tripId: number, spotIds: number[]) {
+  await db.delete(tripSpots).where(eq(tripSpots.tripId, tripId)).run()
+  for (const spotId of [...new Set(spotIds)]) {
+    const found = await db.select({ id: spots.id }).from(spots).where(eq(spots.id, spotId)).get()
+    if (found) await db.insert(tripSpots).values({ tripId, spotId: found.id }).run()
   }
 }
 

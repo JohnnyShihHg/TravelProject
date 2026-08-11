@@ -15,6 +15,12 @@ const form = reactive({
   tagNames: [] as string[]
 })
 
+// 地點是多選，但麵包屑只能有一條路徑，所以另外記哪一個是主要地點。
+// 送出時把主要地點排在陣列第一個 —— API 是用順序判斷的。
+const selectedDestinationIds = ref<number[]>([])
+const primaryDestinationId = ref<number | null>(null)
+const selectedSpotIds = ref<number[]>([])
+
 const saving = ref(false)
 const errorMessage = ref('')
 
@@ -39,7 +45,15 @@ async function create() {
   errorMessage.value = ''
   saving.value = true
   try {
-    const trip = await $fetch<{ id: number }>('/api/admin/trips', { method: 'POST', body: form })
+    const primary = primaryDestinationId.value
+    const destinationIds = primary !== null
+      ? [primary, ...selectedDestinationIds.value.filter(d => d !== primary)]
+      : [...selectedDestinationIds.value]
+
+    const trip = await $fetch<{ id: number }>('/api/admin/trips', {
+      method: 'POST',
+      body: { ...form, destinationIds, spotIds: [...selectedSpotIds.value] }
+    })
     router.push(`/admin/trips/${trip.id}`)
   } catch (e) {
     errorMessage.value = (e as { data?: { statusMessage?: string } })?.data?.statusMessage ?? '建立失敗'
@@ -51,8 +65,8 @@ async function create() {
 
 <template>
   <div class="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-    <UButton to="/admin" color="neutral" variant="link" icon="i-lucide-arrow-left" class="mb-4 px-0">
-      返回後台
+    <UButton to="/admin/trips" color="neutral" variant="link" icon="i-lucide-arrow-left" class="mb-4 px-0">
+      返回行程列表
     </UButton>
     <h1 class="text-2xl font-bold text-gray-900">
       新增行程
@@ -74,6 +88,13 @@ async function create() {
       <UFormField label="天數">
         <UInput v-model.number="form.days" type="number" min="1" class="w-32" />
       </UFormField>
+
+      <AdminPlacePicker
+        v-model:destination-ids="selectedDestinationIds"
+        v-model:primary-destination-id="primaryDestinationId"
+        v-model:spot-ids="selectedSpotIds"
+      />
+
       <UFormField label="標籤">
         <div class="flex flex-wrap gap-2">
           <label v-for="tag in allTags" :key="tag.id" class="flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs">

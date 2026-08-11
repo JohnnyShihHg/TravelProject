@@ -41,9 +41,9 @@ export default defineEventHandler(async (event) => {
     items = items.filter((t, i) => {
       // 先比對結構化的關聯（主題標籤／地點／景點）。地點與景點以前也是 tag，
       // 拆表之後這裡一定要一起比對，否則搜「東京」「清水寺」會整個落空。
-      const relationMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle))
-        || t.destinations.some(d => d.name.toLowerCase().includes(needle))
-        || t.spots.some(s => s.name.toLowerCase().includes(needle))
+      const relationMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle) || tag.slug.toLowerCase().includes(needle))
+        || t.destinations.some(d => d.name.toLowerCase().includes(needle) || d.slug.toLowerCase().includes(needle))
+        || t.spots.some(s => s.name.toLowerCase().includes(needle) || s.slug.toLowerCase().includes(needle))
       if (relationMatch) return true
       // 比對不到再 fallback 到標題／摘要／內文，解決「標題有櫻花但沒建標籤」的落空問題
       const textMatch = `${t.title} ${t.summary} ${searchTexts[i]}`.toLowerCase().includes(needle)

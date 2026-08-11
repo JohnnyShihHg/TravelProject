@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { getDB } from '../../../utils/db'
 import { trips, tripTags, tags } from '../../../database/schema'
 import { slugify, fallbackSlug, ensureUniqueSlug } from '../../../utils/slug'
+import { setTripDestinations, setTripSpots } from '../../../utils/places'
 
 interface CreateTripBody {
   slug?: string
@@ -9,6 +10,9 @@ interface CreateTripBody {
   summary: string
   days: number
   tagNames?: string[]
+  /** 陣列第一個是主要地點（決定麵包屑路徑） */
+  destinationIds?: number[]
+  spotIds?: number[]
 }
 
 export default defineEventHandler(async (event) => {
@@ -43,6 +47,9 @@ export default defineEventHandler(async (event) => {
     const tag = await db.select().from(tags).where(eq(tags.name, name)).get()
     if (tag) await db.insert(tripTags).values({ tripId: trip.id, tagId: tag.id }).run()
   }
+
+  if (body.destinationIds?.length) await setTripDestinations(db, trip.id, body.destinationIds)
+  if (body.spotIds?.length) await setTripSpots(db, trip.id, body.spotIds)
 
   return trip
 })

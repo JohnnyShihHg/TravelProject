@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TRIP_BADGES } from '~/types/trip'
-import type { TripDetail, TripTag, TripBatch, AdminDestination, AdminSpot } from '~/types/trip'
+import type { TripDetail, TripTag, TripBatch } from '~/types/trip'
 import type { Stage } from '~/components/admin/StageNav.vue'
 
 definePageMeta({ layout: 'admin' })
@@ -12,8 +12,6 @@ const id = Number(route.params.id)
 const { data: trip, refresh } = await useFetch<TripDetail>(`/api/admin/trips/${id}`)
 useHead({ title: () => `編輯：${trip.value?.title ?? ''}` })
 const { data: allTags, refresh: refreshTags } = await useFetch<TripTag[]>('/api/tags')
-const { data: allDestinations } = await useFetch<AdminDestination[]>('/api/admin/destinations')
-const { data: allSpots } = await useFetch<AdminSpot[]>('/api/admin/spots')
 
 const form = reactive({
   slug: '',
@@ -65,36 +63,6 @@ watchEffect(() => {
   primaryDestinationId.value = trip.value.primaryDestination?.id ?? null
   selectedSpotIds.value = trip.value.spots.map(s => s.id)
 })
-
-// 國家在前、底下的城市跟著它，跟側邊欄一樣用縮排表達層級
-const destinationTree = computed(() => {
-  const all = allDestinations.value ?? []
-  return all
-    .filter(d => d.type === 'country')
-    .flatMap(country => [country, ...all.filter(c => c.parentId === country.id)])
-})
-
-function toggleDestination(destinationId: number) {
-  const list = selectedDestinationIds.value
-  const index = list.indexOf(destinationId)
-  if (index === -1) {
-    list.push(destinationId)
-    // 第一個被選的地點自動成為主要地點，省去多一次點擊
-    if (primaryDestinationId.value === null) primaryDestinationId.value = destinationId
-  } else {
-    list.splice(index, 1)
-    if (primaryDestinationId.value === destinationId) {
-      primaryDestinationId.value = list[0] ?? null
-    }
-  }
-}
-
-function toggleSpot(spotId: number) {
-  const list = selectedSpotIds.value
-  const index = list.indexOf(spotId)
-  if (index === -1) list.push(spotId)
-  else list.splice(index, 1)
-}
 
 // 新增標籤
 const newTagName = ref('')
@@ -162,8 +130,7 @@ async function removeTrip() {
   deleting.value = true
   try {
     await $fetch(`/api/admin/trips/${id}`, { method: 'DELETE' })
-    // /admin/trips 獨立列表頁還沒做（見 TASK C6），行程列表目前在 /admin 儀表板上
-    await router.push('/admin')
+    await router.push('/admin/trips')
   } finally {
     deleting.value = false
   }
@@ -225,7 +192,7 @@ const stages = computed<Stage[]>(() => [
     <div class="mx-auto max-w-[1400px]">
       <!-- 麵包屑＋標題：跟前台一樣的層級表達，讓後台也知道自己在哪 -->
       <div class="flex flex-wrap items-center gap-2 text-sm text-gray-500">
-        <NuxtLink to="/admin" class="hover:text-primary">
+        <NuxtLink to="/admin/trips" class="hover:text-primary">
           行程
         </NuxtLink>
         <UIcon name="i-lucide-chevron-right" class="size-3.5 text-gray-300" />
@@ -271,61 +238,11 @@ const stages = computed<Stage[]>(() => [
                 </p>
               </div>
 
-              <UFormField label="前往的地點">
-                <div class="space-y-1">
-                  <div
-                    v-for="d in destinationTree"
-                    :key="d.id"
-                    class="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-gray-50"
-                    :class="d.type === 'city' ? 'ml-5' : ''"
-                  >
-                    <input
-                      :id="`dest-${d.id}`"
-                      type="checkbox"
-                      :checked="selectedDestinationIds.includes(d.id)"
-                      class="size-4 shrink-0"
-                      @change="toggleDestination(d.id)"
-                    >
-                    <label :for="`dest-${d.id}`" class="flex-1 cursor-pointer text-sm text-gray-700">
-                      {{ d.name }}
-                      <span v-if="d.type === 'country' && d.isDomestic" class="ml-1 text-xs text-primary">國內</span>
-                    </label>
-                    <UButton
-                      v-if="selectedDestinationIds.includes(d.id)"
-                      size="xs"
-                      :color="primaryDestinationId === d.id ? 'primary' : 'neutral'"
-                      :variant="primaryDestinationId === d.id ? 'solid' : 'ghost'"
-                      @click="primaryDestinationId = d.id"
-                    >
-                      {{ primaryDestinationId === d.id ? '主要地點' : '設為主要' }}
-                    </UButton>
-                  </div>
-                </div>
-                <p v-if="!destinationTree.length" class="text-xs text-gray-400">
-                  尚未建立任何目的地，請先到「目的地」頁新增。
-                </p>
-              </UFormField>
-
-              <UFormField label="造訪的景點">
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="s in allSpots ?? []"
-                    :key="s.id"
-                    type="button"
-                    class="rounded-full border px-3 py-1 text-xs transition-colors"
-                    :class="selectedSpotIds.includes(s.id)
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary'"
-                    @click="toggleSpot(s.id)"
-                  >
-                    {{ s.name }}
-                    <span v-if="s.destinationName" class="opacity-60">· {{ s.destinationName }}</span>
-                  </button>
-                </div>
-                <p v-if="!(allSpots ?? []).length" class="text-xs text-gray-400">
-                  尚未建立任何景點，請先到「景點」頁新增。
-                </p>
-              </UFormField>
+              <AdminPlacePicker
+                v-model:destination-ids="selectedDestinationIds"
+                v-model:primary-destination-id="primaryDestinationId"
+                v-model:spot-ids="selectedSpotIds"
+              />
 
               <UFormField label="主題標籤">
                 <div class="flex flex-wrap gap-2">
