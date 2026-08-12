@@ -8,7 +8,8 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@nuxt/icon',
     '@nuxt/fonts',
-    '@nuxt/eslint'
+    '@nuxt/eslint',
+    'nuxt-security'
   ],
 
   css: ['~/assets/css/main.css'],
@@ -24,41 +25,56 @@ export default defineNuxtConfig({
     }
   },
 
-  // 安全標頭。放在 routeRules 而不是 public/_headers：_headers 只作用在
-  // Cloudflare 直接吐出的靜態檔案，SSR 出來的 HTML 是 Worker 產生的，吃不到。
-  routeRules: {
-    '/**': {
-      headers: {
-        // script-src 不得不放行 inline：Nuxt 4 會輸出 importmap 與 hydration 用的
-        // inline script，改成嚴格模式整站會直接壞掉。要真正鎖起來需要導入
-        // nonce 機制（nuxt-security 模組），成本較高、之後可再評估。
-        // 即使 script 放寬，下面這幾條在 XSS 發生時仍然擋得住實際危害：
-        //   object-src  擋外掛型執行
-        //   base-uri    擋 <base> 劫持所有相對路徑
-        //   form-action 擋注入的表單把資料送去外部網域
-        //   frame-ancestors 擋點擊劫持
-        'content-security-policy': [
-          'default-src \'self\'',
-          'script-src \'self\' \'unsafe-inline\'',
-          'style-src \'self\' \'unsafe-inline\'',
-          // 圖片來源含 R2（同網域）、picsum 假圖，換成真實照片後可再收緊成 'self'
-          'img-src \'self\' data: blob: https:',
-          'font-src \'self\' data:',
-          'connect-src \'self\'',
-          'object-src \'none\'',
-          'base-uri \'self\'',
-          'form-action \'self\'',
-          'frame-ancestors \'none\'',
-          'upgrade-insecure-requests'
-        ].join('; '),
-        // /media/ 直接回傳使用者上傳的檔案，一定要禁止瀏覽器自行猜測型別
-        'x-content-type-options': 'nosniff',
-        'x-frame-options': 'DENY',
-        'referrer-policy': 'strict-origin-when-cross-origin',
-        // 這個站不需要這些裝置權限，一律關掉
-        'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()'
+  // 安全標頭，改用 nuxt-security 而不是手動 routeRules headers：
+  // 這個模組支援 CSP 的 nonce 機制，每個 request 動態產生隨機值，讓 script-src 可以
+  // 真正鎖成 'strict-dynamic' + nonce，不用再靠 'unsafe-inline' 放行所有 inline script。
+  //
+  // nuxt-security 預設還會啟用 CSRF / rate limiter / CORS handler / request size limiter
+  // 等其他防護，這裡全部明確關掉：這個站的 admin API 目前是用 $fetch 直接打，沒有處理
+  // CSRF token，貿然讓 CSRF 保護生效會直接打壞後台所有寫入操作。只要 CSP 與標頭這一塊。
+  security: {
+    headers: {
+      contentSecurityPolicy: {
+        'default-src': ['\'self\''],
+        // 'unsafe-inline' 留著純粹是給不支援 nonce 的舊瀏覽器 fallback：CSP Level 3
+        // 規格規定瀏覽器只要認得 nonce-source，就會忽略同一個指令裡的 'unsafe-inline'，
+        // 兩者共存是官方文件建議的標準寫法，不是設定錯誤或安全漏洞。
+        'script-src': ['\'self\'', '\'strict-dynamic\'', '\'nonce-{{nonce}}\'', '\'unsafe-inline\''],
+        'style-src': ['\'self\'', '\'unsafe-inline\''],
+        // 圖片來源含 R2（同網域）、picsum 假圖，換成真實照片後可再收緊成 'self'
+        'img-src': ['\'self\'', 'data:', 'blob:', 'https:'],
+        'font-src': ['\'self\'', 'data:'],
+        'connect-src': ['\'self\''],
+        'object-src': ['\'none\''],
+        'base-uri': ['\'self\''],
+        'form-action': ['\'self\''],
+        'frame-ancestors': ['\'none\''],
+        'upgrade-insecure-requests': true
+      },
+      // 預設偏嚴格會擋掉跨網域載入資源，這個站還在用外部的 picsum.photos 假圖
+      // （TASK D2，等真實照片上線才會拿掉），也需要讓社群平台抓取 og:image 做預覽卡片
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: 'cross-origin',
+      xContentTypeOptions: 'nosniff',
+      xFrameOptions: 'DENY',
+      referrerPolicy: 'strict-origin-when-cross-origin',
+      permissionsPolicy: {
+        camera: [],
+        microphone: [],
+        geolocation: [],
+        payment: []
       }
-    }
+    },
+    nonce: true,
+    csrf: false,
+    rateLimiter: false,
+    corsHandler: false,
+    requestSizeLimiter: false,
+    xssValidator: false,
+    allowedMethodsRestricter: false,
+    basicAuth: false,
+    sri: false,
+    ssg: false
   },
 
   runtimeConfig: {

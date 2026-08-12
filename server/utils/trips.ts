@@ -1,7 +1,7 @@
 import { eq, asc, inArray } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import type { DB } from './db'
-import { trips, batches, tags, tripTags, destinations, tripDestinations, spots, tripSpots, media, tripImages, contentBlocks } from '../database/schema'
+import { trips, batches, tags, tripTags, destinations, tripDestinations, spots, tripSpots, media, tripImages, contentBlocks, contentSnippets } from '../database/schema'
 import { parseBlockData } from './content-blocks'
 
 export async function getTripTags(db: DB, tripId: number) {
@@ -101,7 +101,21 @@ export async function getTripBlocks(db: DB, tripId: number) {
     .where(eq(contentBlocks.tripId, tripId))
     .orderBy(asc(contentBlocks.sortOrder))
     .all()
-  return rows.map(row => ({ ...row, data: parseBlockData(row.data) }))
+
+  // reference 模式的區塊要讀範本的即時內容，不是自己存的那份（那份只是範本被刪掉時的
+  // fallback）。一個行程的區塊數量很小，但還是一次撈齊用到的範本，不要逐筆查詢。
+  const snippetIds = [...new Set(rows.map(r => r.snippetId).filter((id): id is number => id !== null))]
+  const snippets = snippetIds.length
+    ? await db.select().from(contentSnippets).where(inArray(contentSnippets.id, snippetIds)).all()
+    : []
+  const snippetById = new Map(snippets.map(s => [s.id, s]))
+
+  return rows.map((row) => {
+    const snippet = row.snippetId !== null ? snippetById.get(row.snippetId) : undefined
+    // 範本被刪掉的話 snippetId 會被 ON DELETE SET NULL 清成 null，這裡的 snippet 是
+    // undefined 只可能發生在還沒被清掉、查詢時間差的情況，一樣安全地回退用自己存的那份
+    return { ...row, data: parseBlockData(snippet ? snippet.data : row.data) }
+  })
 }
 
 // batches 的原始 select() 本來就含 tripId（TripBatch 型別的一部分），保留不動。

@@ -14,6 +14,12 @@ const BLOCK_TYPES = Object.keys(BLOCK_LABELS) as ContentBlockType[]
 
 const sortedBlocks = computed(() => [...props.blocks].sort((a, b) => a.sortOrder - b.sortOrder))
 
+// 引用模式的區塊不可在這裡編輯（要改就去範本庫改，改一次全部引用處一起更新）。
+// snippets 清單已經為了下方「插入範本」面板抓過了，這裡直接拿來對照名稱。
+function snippetName(block: ContentBlock) {
+  return snippets.value?.find(s => s.id === block.snippetId)?.name ?? '（範本已被刪除，改成可自行編輯的空白內容）'
+}
+
 const expandedId = ref<number | null>(null)
 const drafts = reactive<Record<number, BlockData>>({})
 const saving = ref<number | null>(null)
@@ -46,7 +52,14 @@ function toggleExpand(block: ContentBlock) {
 async function saveBlock(block: ContentBlock) {
   saving.value = block.id
   try {
-    await $fetch(`/api/admin/blocks/${block.id}`, { method: 'PATCH', body: { data: drafts[block.id] } })
+    // 引用模式沒有「這個行程自己的版本」——編輯它就是編輯範本本身，
+    // 存進 content_snippets 才會讓所有引用這個範本的行程一起更新。
+    if (block.snippetId) {
+      await $fetch(`/api/admin/snippets/${block.snippetId}`, { method: 'PATCH', body: { data: drafts[block.id] } })
+      await refreshSnippets()
+    } else {
+      await $fetch(`/api/admin/blocks/${block.id}`, { method: 'PATCH', body: { data: drafts[block.id] } })
+    }
     emit('refresh')
   } finally {
     saving.value = null
@@ -99,7 +112,18 @@ async function move(block: ContentBlock, direction: -1 | 1) {
 async function saveAsSnippet(block: ContentBlock) {
   const name = prompt('範本名稱（例如：出國旅遊安全須知）')
   if (!name?.trim()) return
-  await $fetch('/api/admin/snippets', { method: 'POST', body: { name: name.trim(), type: block.type, data: drafts[block.id] ?? block.data } })
+  // 用 confirm 而不是額外做一個小 modal：只有兩個選項，跟現有 prompt() 的簡陋程度一致，
+  // 不需要為這個決策點另外設計 UI 元件。
+  const asReference = confirm(
+    '要設成「共用範本」嗎？\n\n'
+    + '共用範本：之後在任何行程編輯這個範本，所有用到它的地方會一起更新（適合退稅說明、取消政策這類制式條款）。\n'
+    + '一般範本：插入後各自獨立，之後修改互不影響（適合每日行程骨架這類起手模板）。\n\n'
+    + '按「確定」= 共用範本，按「取消」= 一般範本'
+  )
+  await $fetch('/api/admin/snippets', {
+    method: 'POST',
+    body: { name: name.trim(), type: block.type, data: drafts[block.id] ?? block.data, mode: asReference ? 'reference' : 'copy' }
+  })
   await refreshSnippets()
 }
 
@@ -135,27 +159,42 @@ function deleteSnippet(snippet: ContentSnippet) {
       <div class="flex flex-wrap items-center gap-2 p-3">
         <UIcon :name="BLOCK_LABELS[block.type].icon" class="size-4 shrink-0 text-primary" />
         <span class="shrink-0 text-xs font-semibold text-gray-900">{{ BLOCK_LABELS[block.type].label }}</span>
+        <UBadge v-if="block.snippetId" color="info" variant="subtle" size="sm" icon="i-lucide-link" class="shrink-0">
+          引用自範本：{{ snippetName(block) }}
+        </UBadge>
         <span class="w-full min-w-0 text-xs text-gray-400 sm:w-auto sm:flex-1 sm:truncate">{{ preview(block) }}</span>
         <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
           <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-chevron-up" square @click="move(block, -1)" />
           <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-chevron-down" square @click="move(block, 1)" />
-          <UButton size="xs" color="neutral" variant="ghost" :icon="expandedId === block.id ? 'i-lucide-chevron-up' : 'i-lucide-pencil'" @click="toggleExpand(block)">
-            {{ expandedId === block.id ? '收合' : '編輯' }}
+          <UButton
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            :icon="expandedId === block.id ? 'i-lucide-chevron-up' : 'i-lucide-pencil'"
+            @click="toggleExpand(block)"
+          >
+            {{ expandedId === block.id ? '收合' : (block.snippetId ? '編輯範本' : '編輯') }}
           </UButton>
           <UButton size="xs" color="error" variant="ghost" icon="i-lucide-trash-2" square @click="removeBlock(block)" />
         </div>
       </div>
 
       <div v-if="expandedId === block.id" class="border-t border-gray-100 p-3">
+        <!-- 引用模式沒有「這個行程自己的版本」，編輯它就是編輯範本，其他引用處會一起變 -->
+        <p v-if="block.snippetId" class="mb-3 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
+          正在編輯共用範本「{{ snippetName(block) }}」，儲存後所有用到它的行程會一起更新。
+        </p>
+
         <AdminBlockEditorRichText v-if="block.type === 'richtext' || block.type === 'highlights'" v-model="(drafts[block.id] as any)" />
         <AdminBlockEditorFlight v-else-if="block.type === 'flight'" v-model="(drafts[block.id] as any)" />
         <AdminBlockEditorDailyItinerary v-else-if="block.type === 'daily_itinerary'" v-model="(drafts[block.id] as any)" />
 
         <div class="mt-3 flex flex-wrap gap-2">
           <UButton size="xs" color="primary" :loading="saving === block.id" @click="saveBlock(block)">
-            儲存區塊
+            {{ block.snippetId ? '儲存範本' : '儲存區塊' }}
           </UButton>
-          <UButton size="xs" color="neutral" variant="soft" @click="saveAsSnippet(block)">
+          <!-- 引用模式本身已經是範本了，「另存為範本」在這裡沒有意義 -->
+          <UButton v-if="!block.snippetId" size="xs" color="neutral" variant="soft" @click="saveAsSnippet(block)">
             另存為範本
           </UButton>
         </div>

@@ -205,7 +205,8 @@ export interface ContentBlock {
   type: ContentBlockType
   sortOrder: number
   data: BlockData
-  /** 有值代表內容來自範本（snippet.mode='reference'），後台顯示為唯讀 */
+  /** 有值代表內容來自範本（snippet.mode='reference'）。編輯這個區塊等於編輯範本本身，
+   *  改一次所有引用這個範本的行程會一起更新，不能只改這個行程自己的版本。 */
   snippetId: number | null
 }
 
