@@ -1,14 +1,23 @@
 # 無穹旅行社官網 — 規劃筆記（Grill 已完成，設計確認版）
 
-> 2026-08-08 完成 grill 逼問，以下為最終確認設計，可作為實作依據。
+> 2026-08-08 完成 grill 逼問，最終確認設計見下方。
+> **2026-08-12 更新**：資料模型已從「trips + 單一 tags 表」拆分為「trips / destinations / spots / tags 四個實體」（見下方「資料模型」章節），並補上全站 SEO（見「SEO」章節）。下方 2026-08-08 的舊版待辦與資料模型敘述已依現況修正，執行中的完整任務清單見 `IMPLEMENTATION_TASKS.md`（Phase A-D，依 bug → 資料庫 → UI → SEO/部署排序）。
 
-## 📝 待辦（下次處理，接續 2026-08-08 進度）
-- [ ] **驗證 `/admin` RWD 修正**：2026-08-08 把後台所有橫向擠壓的排版改成手機寬度向下堆疊、已部署上測試站，但當時瀏覽器自動化工具的視窗縮放在這個環境沒生效，沒能實際截圖確認窄螢幕（iPhone 17 基礎版寬度 ~390-400px）畫面。**麻煩用手機或瀏覽器開發者工具的裝置模擬實際打開 `/admin` 檢查**，有問題再告訴我要調整哪個畫面
-- [ ] **`/admin` 還是完全沒有登入驗證**：講了好幾次的 Cloudflare Access（Zero Trust）一直沒做，測試站目前任何人知道網址都能進後台改資料。等客戶決定要正式使用前一定要補
+## 📝 待辦（2026-08-12 現況）
+- [ ] **`/admin` 還是完全沒有登入驗證**：講了好幾次的 Cloudflare Access（Zero Trust）一直沒做，測試站目前任何人知道網址都能進後台改資料。等客戶決定要正式使用前一定要補（`IMPLEMENTATION_TASKS.md` TASK D4）
 - [ ] **自訂網域**：目前測試站是 `wuqiong-travel.nadia861130.workers.dev` 免費子網域，正式上線需要客戶提供他自己的網域（要先加進他的 Cloudflare 帳號）
 - [ ] **Telegram 通知沒真的串接**：聯絡表單送出後目前只是存 D1、沒有真的發 Telegram 訊息通知（`server/api/contact.post.ts` 裡有寫好串接邏輯，只是沒設定 `telegramBotToken`/`telegramChatId`）
 - [ ] **行程瀏覽紀錄功能**：使用者提過想記錄訪客看過哪些行程，細節還沒 grill 過，詳見下方「待確認」章節
-- [ ] **目前 6 筆行程都是假資料**（我編的示範內容），正式上線前要換成客戶真實的行程資料，圖片也要換成真的照片（現在種子資料的圖是 picsum.photos 隨機圖）
+- [ ] **目前的行程都是假資料**（示範內容），正式上線前要換成客戶真實的行程資料，圖片也要換成真的照片（現在種子資料的圖是 picsum.photos 隨機圖，見 `IMPLEMENTATION_TASKS.md` TASK D2）
+- [ ] **migrations `0003`/`0004`/`0005`（地點/景點/SEO 相關 schema）尚未套用到正式 D1**，線上仍是舊 schema。部署前必看 `IMPLEMENTATION_TASKS.md` TASK D5 的檢查清單
+
+## ✅ 已完成（2026-08-08 → 2026-08-12 期間，原「待辦」已解決的項目）
+- [x] `/admin` RWD 已驗證（手機寬度向下堆疊）
+- [x] 資料模型拆分：地點（destinations）／景點（spots）／主題標籤（tags）三個獨立實體，各自有 landing page 與後台管理頁
+- [x] 全站 SEO：`usePageSeo` composable、JSON-LD、動態 `sitemap.xml`、`robots.txt`
+- [x] 後台改為分組側邊欄 + 階段式行程編輯器，行程列表拆成獨立的 `/admin/trips` 頁
+- [x] 真的圖片上傳，接 R2 + Images binding 自動壓縮
+- [x] 費用改成只填數字（`priceFrom`），前台統一套用 `NT$ {數字} 起` 模板
 
 ## ⚠️ 部署帳號注意事項（2026-08-08）
 這個網站是幫**客戶**做的，正式/測試環境都必須部署到**客戶自己的 Cloudflare 帳號**，不是開發者（johnny.shih1997@gmail.com）自己的帳號。
@@ -22,14 +31,15 @@
 
 **已知 wrangler 帳號自動解析 bug**：這台機器上 `wrangler whoami` 顯示正確帳號，但部分指令（例如 `wrangler d1 create`）內部解析 account_id 時有時仍會抓到別的帳號（實測抓到過開發者自己的帳號 id）。因此 `wrangler.jsonc` 裡明確寫死 `"account_id": "d533ce3cc36dd35fbf18273d2db0d264"`，之後任何新增雲端資源的指令最好也明確帶上 `CLOUDFLARE_ACCOUNT_ID=d533ce3cc36dd35fbf18273d2db0d264` 環境變數，不要完全信任自動解析。
 
-## 測試站部署狀態（2026-08-08）
+## 測試站部署狀態
 已部署到客戶帳號：**https://wuqiong-travel.nadia861130.workers.dev**
 - Worker 名稱：`wuqiong-travel`
-- D1 資料庫：`wuqiong-travel`（id `a16f9442-c457-4ef8-b9d6-e082ae7b6efb`），schema 見 `server/database/migrations/0000_init.sql`，測試假資料見 `0001_seed.sql`（從本機 SQLite 假資料匯出）
+- D1 資料庫：`wuqiong-travel`（id `a16f9442-c457-4ef8-b9d6-e082ae7b6efb`）
+- **⚠️ 2026-08-12 現況：線上 D1 還停在 `0002_seed.sql` 的 schema，`0003`（地點/景點/SEO）、`0004`（媒體地點關聯）、`0005`（聯絡表單已讀）三支 migration 都還沒套用到正式環境**，本機開發用的是最新 schema，兩邊不同步。部署前務必先看 `IMPLEMENTATION_TASKS.md` TASK D5 的完整檢查清單（含備份步驟），不要直接跑 `npm run deploy`
 - `wrangler.jsonc` 裡 `assets.run_worker_first: true` 是必要設定——沒設的話 Cloudflare 的靜態資源會攔截掉所有非首頁的 SSR 路由（`/about`、`/trips/[slug]` 等會變成 404，因為請求根本不會轉給 Worker 處理）
 - `/admin` 目前依然完全沒有登入驗證，這是測試站，之後如果要給客戶正式使用一定要補 Cloudflare Access
-- **R2 + Images binding 已接上**（2026-08-09）：`wuqiong-travel-media` bucket + `images` binding，後台上傳照片會真的壓縮（縮到最大寬 1600px、轉 webp、quality 75）存進 R2；本機開發沒有這些 binding，上傳會存到本機磁碟 `.data/uploads` 不壓縮，純供本機預覽用
-- 後台已補上手機寬度 RWD（2026-08-09），見上方待辦第一項，還沒實機驗證過
+- **R2 + Images binding 已接上**：`wuqiong-travel-media` bucket + `images` binding，後台上傳照片會真的壓縮（縮到最大寬 1600px、轉 webp、quality 75）存進 R2；本機開發沒有這些 binding，上傳會存到本機磁碟 `.data/uploads` 不壓縮，純供本機預覽用
+- 後台 RWD 已驗證（手機寬度向下堆疊）
 
 ## 基礎設施
 - Cloudflare 全家桶：Worker（後端 API）+ Pages（前端，這個 repo 是 Nuxt 4）+ R2（媒體）+ D1（資料庫）
@@ -49,19 +59,35 @@
 - 可以從零開始建置，不用顧慮既有實作衝突
 
 ## 資料模型（D1）
-- **`trips`**（行程樣板）：標題、tiptap 富文本介紹（天數行程等自由內容）、天數、`status`（draft / published）、`is_featured`、`rank`
-  - `status` 只在 trip 層級控管；trip 為 draft 時，底下所有 batch 一起隱藏（後台手機臨時編輯避免誤發）
+
+> 2026-08-12 更新：地點與景點已從 `tags` 拆成獨立實體（migration `0003`），詳細設計決策見 `SCHEMA_REDESIGN.md`。
+
+- **`trips`**（行程樣板）：標題、slug、簡介、天數、`status`（draft / published）、`is_featured`、`rank`、`badge`（狀態標籤）、`seo_title`/`seo_description`（SEO 覆寫，留空自動用標題/簡介推導）
+  - `status` 只在 trip 層級控管；trip 為 draft 時，底下所有 batch 一起隱藏，也不會進 sitemap
   - `is_featured` 精選首頁熱門行程，語意是「未來會出團的熱門行程」，非過去資料
-- **`batches`**（出團梯次）：`trip_id`、出發日期、班機、集合地點、費用說明、**成團人數**（原筆記寫「名額」，已修正為成團人數，非庫存扣減用途）；一個 trip 可對應多個 batch
-- **`tags`** + **`trip_tags`**（多對多關聯）：`tags.category` 區分 location（地點）/ attraction（景點）/ type（類型，如賞花）
-- **`media`** + **`trip_images`**（關聯表）：media 為共用媒體庫（存 r2_key、category），可跨行程重複使用；`trip_images` 存 `trip_id, media_id, is_cover, sort_order`
-  - R2 路徑慣例：`trips/{tripId}/{filename}` 或依 media 分類存放
-  - 後台上傳新行程時可依分類篩選瀏覽媒體庫，直接勾選重複使用既有照片
-- **`contact_submissions`**：姓名、聯絡電話、Email（至少一種聯絡方式必填）、有興趣的行程（可選，關聯 trip）、留言內容
+  - 行程內容改為區塊化（見下方 `content_blocks`），不再是單一 tiptap 大欄位
+- **`destinations`**（地點）+ **`trip_destinations`**（多對多）：兩層 `country → city`。取代原本 `tags.category='location'` 的做法。`is_domestic` 只設在 country 上，city 從 parent 繼承，是國內線／國外線分類的唯一來源。`is_primary` 決定行程麵包屑要顯示哪一條路徑（一個行程可能跨多城市，但麵包屑只能有一條）
+- **`spots`**（景點）+ **`trip_spots`**（多對多）：取代原本 `tags.category='attraction'`。景點介紹與照片跨行程共用，改一次全站更新；有自己的 slug 與 landing page
+- **`tags`** + **`trip_tags`**（多對多）：地點/景點拆出去後，只剩主題標籤（賞櫻／親子／美食…），移除了原本的 `category` 欄位
+- **`batches`**（出團梯次）：`trip_id`、出發日期、班機、集合地點、成團人數、`price_from`（數字，前台統一套 `NT$ {數字} 起` 模板，也給 JSON-LD 用）、`price_info`（選填備註，早鳥價/兩人成行這類非制式說明，**不再承載價格本身**）
+- **`content_blocks`** + **`content_snippets`**：行程內容改成區塊編輯（行程亮點／參考航班／每日行程／富文本），每個區塊獨立儲存；`content_snippets` 是可重複使用的範本庫，`mode='copy'` 插入時複製一份、`mode='reference'` 插入後仍與範本連動（**這個 reference 模式目前 schema 有但邏輯還沒做完**，見 `IMPLEMENTATION_TASKS.md` TASK B5）
+- **`media`** + **`trip_images`** / **`media_destinations`** / **`media_spots`**：media 是共用媒體庫（存 r2_key），可同時掛在行程、地點、景點上，一張清水寺的照片可以同時出現在「清水寺」景點頁與「京都」地點頁的相簿
+- **`contact_submissions`**：姓名、聯絡電話、Email（至少一種聯絡方式必填）、有興趣的行程（可選，關聯 trip）、留言內容、`is_read`
+
+完整欄位定義以 `server/database/schema.ts`（Drizzle schema，含逐欄位設計註解）為準，這裡只列大致輪廓。
 
 ## 搜尋
-- D1 全表 LIKE，先比對 tag，比對不到再 fallback 比對標題/內文（解決「標題有『櫻花』但 tag 沒建」的搜尋落空問題）
-- **不使用 FTS5**：單人旅行社規模約一年 20 團，資料量小，LIKE 已足夠；FTS5 是為大量文件/高頻查詢設計，先不需要
+- 資料量小（一年約 20 團），過濾直接在 JS 做，不寫複雜 SQL（與 D1 LIKE 效果相同，但邏輯集中好維護）
+- `tag` 參數：精確比對，同時吃主題標籤／地點／景點的 slug 或 name，前台各種入口（主題卡、目的地頁、景點頁）共用同一支 API
+- `q` 參數：模糊比對，關聯（tag/地點/景點的 name 與 slug）比對不到才 fallback 到標題/摘要/內文
+- **不使用 FTS5**：規模小，現有做法已足夠；FTS5 是為大量文件/高頻查詢設計，先不需要
+
+## SEO（2026-08-10 完成）
+- `app/composables/usePageSeo.ts`：統一產生 `<title>`/meta description/OG/canonical，各頁面留空覆寫欄位就自動用標題/簡介推導
+- JSON-LD：行程詳情頁輸出 `Product`/`Offer` 結構化資料，`offers.lowPrice` 讀 `batches.priceFrom`
+- `server/routes/sitemap.xml.get.ts`：動態產生，涵蓋已發布行程 + 所有地點 + 所有景點 + 靜態頁，後台發布新行程不需要人工維護
+- `server/routes/robots.txt.get.ts`：擋 `/admin` 與 `/api/`，指向 sitemap
+- 後台頁面統一 `noindex, nofollow`（`app/layouts/admin.vue`），這是在補上 Cloudflare Access 之前的第二道防線，不是唯一防線
 
 ## 前台（公開網頁）
 
@@ -95,10 +121,7 @@
 - **注意**：`server/utils/db.ts` 的 `ensureSchema()` 與 `migrations/*.sql` 是兩份各自維護的 schema，加欄位時**兩邊都要改**，否則會出現「本機正常、上線爆掉」。`applyLocalColumnMigrations()` 負責替既有的本機 DB 補新欄位。
 
 ## 待確認（新增，尚未實作）
-- **國內線／國外線需要正式的資料欄位**：首頁 Hero 的「國內線／國外線」目前是**推導**出來的，不是資料庫欄位。判斷邏輯寫在 `server/api/trips/index.get.ts` 的 `DOMESTIC_LOCATIONS`：行程帶有 `台灣`／`臺灣` 這個 `location` 標籤就算國內線，帶有其他 location 標籤就算國外線。已知問題：
-  - 靠標籤名稱硬編碼。之後新增「澎湖」「花蓮」等標籤而沒有同時掛「台灣」，會被誤判成國外線。
-  - 完全沒有 location 標籤的行程兩邊都不會出現（刻意的，寧可漏掉也不要誤分類）。
-  - 之後要改成 `trips` 表上的明確欄位（例如 `region: 'domestic' | 'overseas'`），需要 migration + 後台編輯 UI + 把 API 的推導邏輯換掉。使用者已確認目前 DB 沒有這個標記，決定先記著，之後再改。
+- ~~國內線／國外線需要正式的資料欄位~~ —— **已解決（2026-08-10）**：改成 `destinations.is_domestic`（只設在 country 層級，city 從 parent 繼承），不再靠標籤名稱字串硬編碼，見 `server/utils/trips.ts` 的 `isDomesticTrip()`。完全沒掛地點的行程回傳 `null`，兩邊都不會出現（沿用原本「寧可漏掉也不要誤分類」的決策）。
 
 - **行程瀏覽紀錄**：使用者想記錄訪客點過/查看過哪些行程（例如用於之後分析熱門行程、或做「最近瀏覽」功能）。目前完全沒有這塊機制。待確認的問題：
   - 目的是什麼？單純統計每個行程的瀏覽次數（trips 表加 view_count 即可），還是要看「同一個人看過哪些行程」（需要匿名訪客識別，例如 cookie/localStorage 存的 session id，沒有會員系統的情況下如何界定「同一人」）？

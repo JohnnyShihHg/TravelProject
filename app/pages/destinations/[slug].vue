@@ -65,6 +65,8 @@ useJsonLd((abs) => {
         v-if="destination.coverImageUrl"
         :src="destination.coverImageUrl"
         :alt="destination.name"
+        fetchpriority="high"
+        decoding="async"
         class="absolute inset-0 size-full object-cover"
       >
       <div v-else class="absolute inset-0 bg-gradient-to-br from-teal-800 via-sky-800 to-blue-900" />

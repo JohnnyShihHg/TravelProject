@@ -92,6 +92,8 @@ useJsonLd((abs) => {
         v-if="spot.coverImageUrl"
         :src="spot.coverImageUrl"
         :alt="spot.name"
+        fetchpriority="high"
+        decoding="async"
         class="absolute inset-0 size-full object-cover"
       >
       <div v-else class="absolute inset-0 bg-gradient-to-br from-amber-800 via-orange-800 to-rose-900" />

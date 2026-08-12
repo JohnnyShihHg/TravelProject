@@ -3,6 +3,10 @@
 > 撰寫日期：2026-08-12
 > 基準 commit：`20d7173`（工作目錄乾淨，以下所有任務皆未開始）
 > 執行者：Claude Sonnet 5
+>
+> **執行進度（2026-08-12）**：Phase A（`d9cbf26`）、Phase B（`e123929`，B5 依建議跳過）、
+> Phase C（`6614fce`）已完成並驗證。Phase D 進行中：D1/D2/D3 已完成，D4（Cloudflare Access）
+> 與 D5（部署清單）需要使用者本人操作或確認，尚未執行。
 
 ---
 
@@ -25,7 +29,7 @@
 
 ---
 
-## TASK A1 — 行程編輯器捲到最底時「⑥ SEO」階段不會高亮
+## TASK A1 ✅ — 行程編輯器捲到最底時「⑥ SEO」階段不會高亮
 
 **檔案**：`app/components/admin/StageNav.vue`
 
@@ -51,7 +55,7 @@
 
 ---
 
-## TASK A2 — 聯絡表單「已讀 / 未讀」被誤讀成相反
+## TASK A2 ✅ — 聯絡表單「已讀 / 未讀」被誤讀成相反
 
 **檔案**：`app/pages/admin/contacts.vue`
 
@@ -74,7 +78,7 @@
 
 ---
 
-## TASK A3 — 後台頁面沒有 `<title>`
+## TASK A3 ✅ — 後台頁面沒有 `<title>`
 
 **檔案**：`app/layouts/admin.vue`（主要）＋各 `app/pages/admin/*.vue`
 
@@ -104,7 +108,7 @@
 
 ---
 
-## TASK A4 — 刪除行程後導向不存在的 `/admin/trips`（404）
+## TASK A4 ✅ — 刪除行程後導向不存在的 `/admin/trips`（404）
 
 **檔案**：`app/pages/admin/trips/[id]/index.vue:158`
 
@@ -122,7 +126,7 @@
 
 ---
 
-## TASK B1 — 統一 slugify，移除 `trips/index.post.ts` 的私有版本
+## TASK B1 ✅ — 統一 slugify，移除 `trips/index.post.ts` 的私有版本
 
 **檔案**：`server/api/admin/trips/index.post.ts:13-19`
 
@@ -148,7 +152,7 @@
 
 ---
 
-## TASK B2 — 行程 slug 建立後可以編輯
+## TASK B2 ✅ — 行程 slug 建立後可以編輯
 
 **檔案**：`server/api/admin/trips/[id].patch.ts`、`app/pages/admin/trips/[id]/index.vue`
 
@@ -188,7 +192,7 @@
 
 ---
 
-## TASK B3 — 費用改成只填數字，前台套固定模板
+## TASK B3 ✅ — 費用改成只填數字，前台套固定模板
 
 **檔案**：`app/pages/admin/trips/[id]/index.vue`、`app/components/TripDetailView.vue`、`server/api/admin/trips/[id]/batches.post.ts`、`server/api/admin/batches/[id].patch.ts`
 
@@ -221,7 +225,7 @@
 
 ---
 
-## TASK B4 — 修掉 `listPublishedTrips` 的 N+1 查詢
+## TASK B4 ✅ — 修掉 `listPublishedTrips` 的 N+1 查詢
 
 **檔案**：`server/utils/trips.ts:154-157`
 
@@ -276,7 +280,7 @@ export async function listPublishedTrips(db: DB) {
 
 ---
 
-## TASK C1 — 首頁卡片跑版，固定大小＋文字 `...` 收尾
+## TASK C1 ✅ — 首頁卡片跑版，固定大小＋文字 `...` 收尾
 
 **檔案**：`app/components/TripCard.vue`（首頁「當前熱門」與 `/trips` 共用同一個元件）
 
@@ -299,7 +303,7 @@ export async function listPublishedTrips(db: DB) {
 
 ---
 
-## TASK C2 — 主題標籤篩選顯示英文 slug，要改成中文
+## TASK C2 ✅ — 主題標籤篩選顯示英文 slug，要改成中文
 
 **檔案**：`app/components/TripDetailView.vue:111`、`app/pages/trips/index.vue:16-21`
 
@@ -333,7 +337,7 @@ export async function listPublishedTrips(db: DB) {
 
 ---
 
-## TASK C3 — 探索行程頁改成「用搜尋 bar 呈現」的邏輯
+## TASK C3 ✅ — 探索行程頁改成「用搜尋 bar 呈現」的邏輯
 
 **檔案**：`app/pages/trips/index.vue`
 
@@ -384,7 +388,7 @@ const relationMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle)
 
 ---
 
-## TASK C4 — 行程編輯頁要能直接新增國家與景點
+## TASK C4 ✅ — 行程編輯頁要能直接新增國家與景點
 
 **檔案**：`app/pages/admin/trips/[id]/index.vue`（「② 地點與景點」區塊，第 251-335 行）
 
@@ -410,7 +414,7 @@ const relationMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle)
 
 ---
 
-## TASK C5 — `/admin/trips/new` 補上地點與景點欄位
+## TASK C5 ✅ — `/admin/trips/new` 補上地點與景點欄位
 
 **檔案**：`app/pages/admin/trips/new.vue`、`server/api/admin/trips/index.post.ts`
 
@@ -425,7 +429,7 @@ const relationMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle)
 
 ---
 
-## TASK C6 — 建立 `/admin/trips` 獨立列表頁
+## TASK C6 ✅ — 建立 `/admin/trips` 獨立列表頁
 
 **檔案**：新增 `app/pages/admin/trips/index.vue`，調整 `app/pages/admin/index.vue`、`app/layouts/admin.vue`
 
@@ -446,7 +450,7 @@ const relationMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle)
 
 ---
 
-## TASK D1 — 確認 Tiptap 沒被打包進前台 bundle
+## TASK D1 ✅ — 確認 Tiptap 沒被打包進前台 bundle
 
 **問題**：Lighthouse 報「Reduce unused JavaScript 可省 210 KiB」。Tiptap 有 20 個套件（見 `package.json` dependencies），只有後台的 `app/components/admin/TiptapEditor.vue` 用得到。
 
@@ -460,7 +464,7 @@ const relationMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle)
 
 ---
 
-## TASK D2 — 圖片換成 R2 真實照片（等客戶素材）
+## TASK D2 ✅ — 圖片換成 R2 真實照片（等客戶素材）
 
 **現況**：Hero 與所有行程卡都在用 `picsum.photos` 的外部隨機圖（例如 `app/pages/trips/index.vue:66`）。
 
@@ -475,7 +479,7 @@ const relationMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle)
 
 ---
 
-## TASK D3 — 更新 `PLANNING_NOTES.md` 與 `SCHEMA_REDESIGN.md`
+## TASK D3 ✅ — 更新 `PLANNING_NOTES.md` 與 `SCHEMA_REDESIGN.md`
 
 **現況**：
 - `PLANNING_NOTES.md` 裡 destinations / spots / SEO 出現 **0 次**，與現況嚴重脫節（那三個實體已經上線好幾個 commit 了）。

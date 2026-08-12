@@ -124,6 +124,8 @@ function submitSearch() {
       <img
         src="https://picsum.photos/seed/trip-calendar/1600/500"
         alt=""
+        fetchpriority="high"
+        decoding="async"
         class="absolute inset-0 size-full object-cover"
       >
       <div class="absolute inset-0 bg-gradient-to-br from-teal-900/40 via-sky-900/30 to-blue-950/40" />

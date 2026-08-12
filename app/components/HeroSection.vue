@@ -51,6 +51,8 @@ async function toggle(value: HeroChoice, index: number) {
       v-if="hero?.imageUrl"
       :src="hero.imageUrl"
       alt=""
+      fetchpriority="high"
+      decoding="async"
       class="absolute inset-0 size-full object-cover"
     >
     <div class="absolute inset-0 bg-gray-900/35" />

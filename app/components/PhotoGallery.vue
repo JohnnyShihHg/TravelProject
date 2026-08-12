@@ -32,6 +32,7 @@ const hasPhotos = computed(() => props.photos.length > 0)
           :src="item.url"
           alt="相關照片"
           loading="lazy"
+          decoding="async"
           class="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105"
         >
       </a>

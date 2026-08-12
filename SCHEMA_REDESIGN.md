@@ -1,6 +1,8 @@
-# DB Schema 重新設計（2026-08-10 設計稿，待審閱）
+# DB Schema 重新設計（2026-08-10 設計稿，**已實作**）
 
-> 這份是**設計文件，尚未實作**。確認後才動 `schema.ts` / `db.ts` / `migrations/`。
+> **狀態：已實作**（commit `219b869` 資料模型拆分、`97e0e05` 目的地/景點頁與 SEO、`20d7173` 後台補齊管理頁）。
+> 下方內容維持設計當時的原文，作為決策依據保留；與最終實作的落差記在文件最後新增的「與最終實作的落差」一節。
+> 正式環境的 D1 **尚未套用**對應的 migration（`0003`/`0004`/`0005`），部署前必看 `IMPLEMENTATION_TASKS.md` TASK D5。
 > 背景討論見 `PLANNING_NOTES.md`。
 
 ## 設計原則
@@ -345,5 +347,17 @@ export const tripDestinations = sqliteTable('trip_destinations', {
 | `content_blocks` | ✏️ 新增 `snippet_id`（可延後） |
 | `media` | 💬 只修註解 |
 | `trip_images` / `hero_content` / `contact_submissions` | ✅ 不動 |
+
+---
+
+## 八、與最終實作的落差（2026-08-12 補記）
+
+Schema 層面（本文件第七節「改動總表」）與實際落地的表結構一致，`destinations`/`spots`/`trip_destinations`/`trip_spots` 都照設計新增，`tags` 也照設計收斂。但**兩個地方後續的產品決策跟這份設計稿的原始理由不一樣**：
+
+1. **`priceFrom` 的定位反過來了。** 本文件第三節（177 行起）設計時的立場是「`priceInfo` 完全保留不動、是前台主要顯示，`priceFrom` 純粹是為了 JSON-LD 才加的數字副本」。但 2026-08-12 使用者直接要求「費用改成只填數字」，於是**顛倒**成 `priceFrom` 是唯一價格來源、前台統一套 `NT$ {數字} 起` 模板，`priceInfo` 降格為選填備註（早鳥價/兩人成行這類非制式說明）。這不是這份設計稿沒想到，是後來的需求本身變了 —— 「同一份資料兩種用途」的判斷在客戶決定固定顯示格式後就不成立了。
+
+2. **`content_snippets.mode='reference'` 仍是本文件第 233 行標注的「可以往後延」狀態，而且確實被延了。** schema 的 `mode` 欄位與 `content_blocks.snippet_id` 都已建立，但 `from-snippet.post.ts` 至今沒有讀 `mode`、也沒有寫入 `snippetId`，一律走 `copy`。這不是遺漏，是 TASK B5 明確記錄「先跳過，等其他 Phase 做完再問使用者要不要做」的延後決定，跟設計稿當初的判斷一致，只是延後的時間比預期長。
+
+其餘章節（地點/景點的階層設計、SEO 欄位、daily_itinerary 不加 spotIds 的決定）都與最終實作相符，沒有落差。
 
 **4 張新表、5 張表加欄位、1 處註解。**

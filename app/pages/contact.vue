@@ -46,7 +46,7 @@ async function submit() {
   <div>
     <!-- hero 高度跟首頁 hero 一致 -->
     <div class="relative min-h-[560px] overflow-hidden sm:min-h-[680px]">
-      <img src="https://picsum.photos/seed/contact-hero/1600/700" alt="聯絡無穹旅行社" class="absolute inset-0 size-full object-cover">
+      <img src="https://picsum.photos/seed/contact-hero/1600/700" alt="聯絡無穹旅行社" fetchpriority="high" decoding="async" class="absolute inset-0 size-full object-cover">
       <div class="absolute inset-0 bg-black/30" />
       <div class="absolute inset-0 flex items-center justify-center pt-16">
         <h1 class="text-3xl font-bold text-white sm:text-4xl">

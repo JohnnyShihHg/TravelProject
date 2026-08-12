@@ -13,6 +13,8 @@ usePageSeo({
       <img
         src="https://picsum.photos/seed/about-hero/1600/900"
         alt="無穹旅行社"
+        fetchpriority="high"
+        decoding="async"
         class="absolute inset-0 size-full object-cover"
       >
       <div class="absolute inset-0 bg-black/30" />
@@ -48,7 +50,7 @@ usePageSeo({
             { img: 'https://picsum.photos/seed/about-korea/600/400', label: '韓國親子路線' },
             { img: 'https://picsum.photos/seed/about-taiwan/600/400', label: '台灣深度小旅行' }
           ]" :key="route.label">
-            <img :src="route.img" :alt="route.label" class="aspect-4/3 w-full rounded-lg object-cover">
+            <img :src="route.img" :alt="route.label" loading="lazy" decoding="async" class="aspect-4/3 w-full rounded-lg object-cover">
             <figcaption class="mt-2 text-sm text-gray-600">
               {{ route.label }}
             </figcaption>
