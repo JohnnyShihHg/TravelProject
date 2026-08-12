@@ -27,6 +27,30 @@ const CONTENT_TYPE_EXT: Record<string, string> = {
   'image/gif': 'gif'
 }
 
+/** 單張圖片上限。客戶用手機拍的原始照片大約 3-8MB，15MB 已經很寬鬆。 */
+export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024
+
+/**
+ * 用檔案開頭的識別位元組判斷真正的格式。
+ *
+ * multipart 的 Content-Type 是呼叫端自己填的，改成 image/png 送任何東西都會通過，
+ * 所以不能只看它。這裡比對實際內容，非圖片一律擋掉。
+ */
+export function sniffImageType(buffer: Buffer): string | null {
+  if (buffer.length < 12) return null
+  // JPEG: FF D8 FF
+  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return 'image/jpeg'
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))) return 'image/png'
+  // GIF: GIF87a / GIF89a
+  if (buffer.subarray(0, 6).toString('latin1').match(/^GIF8[79]a$/)) return 'image/gif'
+  // WEBP: RIFF....WEBP
+  if (buffer.subarray(0, 4).toString('latin1') === 'RIFF' && buffer.subarray(8, 12).toString('latin1') === 'WEBP') {
+    return 'image/webp'
+  }
+  return null
+}
+
 // 上傳並壓縮圖片：Cloudflare 環境用 Images binding 縮圖+轉 webp 後存進 R2；
 // 本機開發沒有 R2/Images binding 可用，直接把原始檔案存到本機磁碟，不壓縮
 // （本機只是給開發者預覽用，真正會被使用者看到的是部署後 R2 版本）。

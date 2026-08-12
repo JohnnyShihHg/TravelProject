@@ -1,6 +1,7 @@
 import { getDB } from '../../../utils/db'
 import { contentSnippets, CONTENT_BLOCK_TYPES } from '../../../database/schema'
 import type { ContentBlockType } from '../../../database/schema'
+import { sanitizeBlockData } from '../../../utils/sanitize-html-content'
 
 interface CreateSnippetBody {
   name: string
@@ -18,7 +19,8 @@ export default defineEventHandler(async (event) => {
   const row = await db.insert(contentSnippets).values({
     name: body.name.trim(),
     type: body.type,
-    data: JSON.stringify(body.data)
+    // 範本之後會被插進行程內容、由前台 v-html 渲染，同樣要先清洗
+    data: JSON.stringify(sanitizeBlockData(body.data))
   }).returning().get()
 
   return { ...row, data: JSON.parse(row.data) }

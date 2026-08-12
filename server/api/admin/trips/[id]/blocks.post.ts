@@ -3,6 +3,7 @@ import { getDB } from '../../../../utils/db'
 import { contentBlocks, CONTENT_BLOCK_TYPES } from '../../../../database/schema'
 import type { ContentBlockType } from '../../../../database/schema'
 import { defaultBlockData } from '../../../../utils/content-blocks'
+import { sanitizeBlockData } from '../../../../utils/sanitize-html-content'
 
 interface CreateBlockBody {
   type: ContentBlockType
@@ -25,7 +26,8 @@ export default defineEventHandler(async (event) => {
     tripId,
     type: body.type,
     sortOrder: maxSort + 1,
-    data: JSON.stringify(body.data ?? defaultBlockData(body.type))
+    // 富文本會被前台用 v-html 原樣渲染，存進去之前一定要先清洗
+    data: JSON.stringify(sanitizeBlockData(body.data ?? defaultBlockData(body.type)))
   }).returning().get()
 
   return { ...row, data: JSON.parse(row.data) }

@@ -9,43 +9,53 @@ export interface Stage {
 const props = defineProps<{ stages: Stage[] }>()
 
 const activeId = ref(props.stages[0]?.id ?? '')
-let observer: IntersectionObserver | null = null
 
-// 用 IntersectionObserver 做捲動追蹤，不用 scroll 事件：
-// scroll 事件要自己節流、還要算每個區塊的位置，捲動時容易掉幀。
-// rootMargin 上緣往下推 120px，是為了讓「剛捲到標題」就切換，
-// 而不是等整個區塊都進畫面才切。
+// 目前階段直接從各區塊的實際位置算出來，不用 IntersectionObserver。
+//
+// 曾經用 observer + rootMargin，但它的 callback 只會收到「這次穿越門檻」的區塊，
+// 不是全部區塊。往上捲時已經在畫面內的那一段狀態沒變、不會進 callback，
+// 於是高亮會直接跳過它（實測：SEO 往上捲會跳過「照片」直接到「行程內容」）。
+// 改成每次都用完整清單重算，就沒有這種部分更新的問題，也不需要另外處理捲到底。
+const ACTIVATION_LINE = 120 // 與 sticky 階段列的高度一致：標題捲到這條線就算進入該階段
+
+let frame = 0
+
+function updateActive() {
+  frame = 0
+  if (props.stages.length === 0) return
+
+  // 捲到底時強制選最後一段：最後一段可能太短，永遠無法把標題頂到判定線以上
+  const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
+  if (atBottom) {
+    activeId.value = props.stages[props.stages.length - 1]!.id
+    return
+  }
+
+  // 取「標題已經捲過判定線」的最後一段；都還沒捲到就維持第一段
+  let current = props.stages[0]!.id
+  for (const stage of props.stages) {
+    const el = document.getElementById(stage.id)
+    if (el && el.getBoundingClientRect().top <= ACTIVATION_LINE) current = stage.id
+  }
+  activeId.value = current
+}
+
+// 用 rAF 節流：捲動事件一秒可以觸發上百次，但畫面一秒最多更新 60 次
+function onScroll() {
+  if (frame) return
+  frame = requestAnimationFrame(updateActive)
+}
+
 onMounted(() => {
-  const sections = props.stages
-    .map(s => document.getElementById(s.id))
-    .filter((el): el is HTMLElement => el !== null)
-  if (sections.length === 0) return
-
-  observer = new IntersectionObserver((entries) => {
-    // 可能同時有多個區塊在畫面內，取最靠近頂端的那個當作目前階段
-    const visible = entries
-      .filter(e => e.isIntersecting)
-      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-    if (visible[0]) activeId.value = visible[0].target.id
-  }, { rootMargin: '-120px 0px -55% 0px', threshold: 0 })
-
-  for (const el of sections) observer.observe(el)
-
-  // 最後一段一旦落在下方 55% 的忽略區就永遠無法被 observer 選中，
-  // 捲到頁面底部時強制高亮最後一段，蓋過 observer 的判斷。
   window.addEventListener('scroll', onScroll, { passive: true })
+  window.addEventListener('resize', onScroll, { passive: true })
+  updateActive()
 })
 onBeforeUnmount(() => {
-  observer?.disconnect()
+  if (frame) cancelAnimationFrame(frame)
   window.removeEventListener('scroll', onScroll)
+  window.removeEventListener('resize', onScroll)
 })
-
-function onScroll() {
-  const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
-  if (atBottom && props.stages.length > 0) {
-    activeId.value = props.stages[props.stages.length - 1]!.id
-  }
-}
 
 function goTo(id: string) {
   const el = document.getElementById(id)
