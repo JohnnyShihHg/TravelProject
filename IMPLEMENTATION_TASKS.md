@@ -5,8 +5,10 @@
 > 執行者：Claude Sonnet 5
 >
 > **執行進度（2026-08-12）**：Phase A（`d9cbf26`）、Phase B（`e123929`，B5 依建議跳過）、
-> Phase C（`6614fce`）已完成並驗證。Phase D 進行中：D1/D2/D3 已完成，D4（Cloudflare Access）
-> 與 D5（部署清單）需要使用者本人操作或確認，尚未執行。
+> Phase C（`6614fce`）、Phase D1-D3（`153866f`）已完成並驗證。**D5 部署已於 2026-08-12 執行完成**
+> （`wrangler whoami` 確認客戶帳號 → `db:verify` 全過 → 線上 D1 migration 早已是最新，非任務書
+> 原先以為的「從未套用」→ `wrangler deploy` 成功 → public 頁面/API smoke test 通過）。
+> **D4（Cloudflare Access）使用者已表示會自行處理**，等正式上線前才會通知，不用主動追問。
 
 ---
 
@@ -508,7 +510,14 @@ const relationMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle)
 
 ---
 
-## TASK D5 — 部署前檢查清單（每次部署都跑一遍）
+## TASK D5 ✅ — 部署前檢查清單（每次部署都跑一遍）
+
+> **2026-08-12 執行紀錄**：`wrangler whoami` 確認客戶帳號 → `npm run db:verify`（本機驗證）全過
+> → `wrangler d1 migrations apply wuqiong-travel --remote` 回報「No migrations to apply」
+> （查 `d1_migrations` 表證實 0003/0004/0005 其實 2026-08-10 就已套用，本文件先前的假設是錯的）
+> → `wrangler deploy` 成功 → 首頁/探索行程/about/contact/sitemap/robots/一個行程詳情頁/一個
+> 目的地頁全部 200，`/api/trips` 回傳 6 筆行程結構正常。**沒有做部署前備份**（使用者確認線上
+> 只有種子假資料，可接受風險）。
 
 **⚠️ 這份清單裡的每一項都要人工確認，不要讓 agent 自動跑 `npm run deploy`。**
 
