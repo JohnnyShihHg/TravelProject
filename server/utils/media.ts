@@ -85,9 +85,13 @@ export async function storeUploadedImage(event: H3Event, fileBuffer: Buffer, con
     // DOM lib's ReadableStream and @cloudflare/workers-types' ReadableStream are structurally
     // incompatible type declarations for the same runtime object; cast to unblock TS here.
     const inputStream = new Response(new Uint8Array(fileBuffer)).body as unknown as Parameters<ImagesBinding['input']>[0]
+    // width 只限制寬度，直式照片的長邊是高度，完全不受限——實測直式照片因此留到
+    // 1600x2400（3.84MP），是橫式照片（1600x1067，1.71MP）的 2 倍以上，檔案也重得多。
+    // 加上 height + fit:'scale-down' 改成「縮進 1600x1600 的框內、只縮不放大」，
+    // 這樣不管照片是橫式、直式還是方形，長邊都會被限制到 1600px。
     const processed = (
       await cf.images.input(inputStream)
-        .transform({ width: 1600 })
+        .transform({ width: 1600, height: 1600, fit: 'scale-down' })
         .output({ format: 'image/webp', quality: 75 })
     ).response()
 

@@ -10,8 +10,12 @@
  * 在瀏覽器先縮好再送，上傳通常會從數 MB 降到數百 KB。
  */
 
-/** 跟伺服器端 transform({ width: 1600 }) 一致，縮完剛好不用再縮 */
-const MAX_WIDTH = 1600
+/**
+ * 跟伺服器端 transform({ width: 1600, height: 1600, fit: 'scale-down' }) 一致，
+ * 縮完剛好不用再縮。限制的是長邊，不是寬度——直式照片的長邊是高度，
+ * 只縮寬度的話直式照片會留下遠比橫式照片多的像素（實測 3.84MP vs 1.71MP）。
+ */
+const MAX_EDGE = 1600
 
 /** 小於這個大小且尺寸本來就不大的檔案直接原樣送，不要多做一次有損重壓 */
 const SKIP_RESIZE_BYTES = 1024 * 1024
@@ -48,11 +52,12 @@ export async function resizeImageForUpload(file: File): Promise<ResizeResult> {
   }
 
   try {
-    if (file.size <= SKIP_RESIZE_BYTES && bitmap.width <= MAX_WIDTH) {
+    const longEdge = Math.max(bitmap.width, bitmap.height)
+    if (file.size <= SKIP_RESIZE_BYTES && longEdge <= MAX_EDGE) {
       return { file, ...original }
     }
 
-    const scale = Math.min(1, MAX_WIDTH / bitmap.width)
+    const scale = Math.min(1, MAX_EDGE / longEdge)
     const width = Math.round(bitmap.width * scale)
     const height = Math.round(bitmap.height * scale)
 
