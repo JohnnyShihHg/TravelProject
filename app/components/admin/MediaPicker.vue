@@ -45,8 +45,10 @@ async function onFileSelected(e: Event) {
   uploadError.value = ''
   uploading.value = true
   try {
+    // 跟媒體庫走同一套：先在瀏覽器縮到 1600px，避免手機原檔讓 Worker 資源超限
+    const { file: toUpload } = await resizeImageForUpload(file)
     const form = new FormData()
-    form.append('file', file)
+    form.append('file', toUpload, (toUpload as File).name ?? file.name)
     // 上傳時自動掛上目前篩選的地點，省去事後再標記
     const slug = destinationFilter.value === ALL ? props.defaultDestinationSlug : destinationFilter.value
     const destination = (destinations.value ?? []).find(d => d.slug === slug)

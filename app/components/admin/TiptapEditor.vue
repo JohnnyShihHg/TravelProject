@@ -97,8 +97,10 @@ async function onFileSelected(e: Event) {
   uploadError.value = ''
   uploading.value = true
   try {
+    // 跟媒體庫走同一套：先在瀏覽器縮到 1600px，避免手機原檔讓 Worker 資源超限
+    const { file: toUpload } = await resizeImageForUpload(file)
     const form = new FormData()
-    form.append('file', file)
+    form.append('file', toUpload, (toUpload as File).name ?? file.name)
     const created = await $fetch<MediaItem>('/api/admin/media', { method: 'POST', body: form })
     library.value = [created, ...library.value]
     insertImage(created.url)

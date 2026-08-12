@@ -27,8 +27,18 @@ const CONTENT_TYPE_EXT: Record<string, string> = {
   'image/gif': 'gif'
 }
 
-/** 單張圖片上限。客戶用手機拍的原始照片大約 3-8MB，15MB 已經很寬鬆。 */
-export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024
+/**
+ * 單張圖片上限。
+ *
+ * 這個數字不是憑感覺訂的：Worker 讀取 multipart 請求時會把整個內容載進記憶體，
+ * 實測 5MB 可以正常處理、8MB 就會觸發資源超限（Cloudflare 錯誤 1102）。
+ * 訂在 5MB 是留在確定安全的一側。
+ *
+ * 正常情況不會碰到這個上限 —— 前台上傳前會先在瀏覽器把圖縮到 1600px
+ * （app/utils/image-upload.ts），縮完通常只有數百 KB。這個上限是給
+ * 「瀏覽器縮圖失敗而原樣送出」或直接打 API 的情況兜底用的。
+ */
+export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
 /**
  * 用檔案開頭的識別位元組判斷真正的格式。
@@ -68,7 +78,14 @@ export async function storeUploadedImage(event: H3Event, fileBuffer: Buffer, con
         .output({ format: 'image/webp', quality: 75 })
     ).response()
 
-    await cf.bucket.put(key, processed.body, {
+    // 先讀成 ArrayBuffer 再交給 R2，不要直接傳 processed.body：
+    // R2 的 put() 要求串流必須有已知長度，而 Images 輸出的串流沒有 Content-Length。
+    // 正式環境剛好可以運作，但本機 wrangler dev 的模擬會直接丟
+    // 「Provided readable stream must have a known length」——
+    // 等於上傳功能在本機完全無法測試，也代表正式環境是依賴一個沒寫明的行為。
+    // 圖片已限制在 5MB 內、且轉檔後通常只有幾百 KB，整個讀進記憶體沒有負擔。
+    const processedBytes = await processed.arrayBuffer()
+    await cf.bucket.put(key, processedBytes, {
       httpMetadata: { contentType: 'image/webp' }
     })
     return { key, url: `/media/${key}` }

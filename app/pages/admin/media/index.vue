@@ -46,24 +46,47 @@ const filtered = computed(() => {
 const fileInput = ref<HTMLInputElement>()
 const uploading = ref(false)
 const uploadError = ref('')
+const uploadProgress = ref('')
 
 async function onFileSelected(e: Event) {
   const files = (e.target as HTMLInputElement).files
   if (!files?.length) return
   uploading.value = true
   uploadError.value = ''
+  uploadProgress.value = ''
+  const failed: string[] = []
+  let savedBytes = 0
+
   try {
-    for (const file of Array.from(files)) {
-      const form = new FormData()
-      form.append('file', file)
-      // 上傳時自動套用目前篩選的地點，省去事後再標記
-      const dest = destinationTree.value.find(d => d.slug === filterSlug.value)
-      if (dest) form.append('destinationIds', String(dest.id))
-      await $fetch('/api/admin/media', { method: 'POST', body: form })
+    const list = Array.from(files)
+    for (const [index, file] of list.entries()) {
+      uploadProgress.value = `處理中 ${index + 1} / ${list.length}：${file.name}`
+      try {
+        // 先在瀏覽器縮到 1600px —— 手機原檔動輒好幾 MB，直接送會讓 Worker 資源超限
+        // （實測約 8MB 就會 1102），而且伺服器端本來就會縮，傳原檔是白費工
+        const { file: toUpload, originalBytes, finalBytes, resized } = await resizeImageForUpload(file)
+        if (resized) savedBytes += originalBytes - finalBytes
+
+        const form = new FormData()
+        form.append('file', toUpload, (toUpload as File).name ?? file.name)
+        // 上傳時自動套用目前篩選的地點，省去事後再標記
+        const dest = destinationTree.value.find(d => d.slug === filterSlug.value)
+        if (dest) form.append('destinationIds', String(dest.id))
+        await $fetch('/api/admin/media', { method: 'POST', body: form })
+      } catch (err) {
+        // 單張失敗不要中斷整批 —— 選 20 張時不該因為第 3 張壞掉就全部停下
+        const msg = (err as { data?: { statusMessage?: string } })?.data?.statusMessage ?? '上傳失敗'
+        failed.push(`${file.name}（${msg}）`)
+      }
     }
+
     await refresh()
-  } catch (err) {
-    uploadError.value = (err as { data?: { statusMessage?: string } })?.data?.statusMessage ?? '上傳失敗'
+    if (failed.length) {
+      uploadError.value = `${failed.length} 張未成功：${failed.join('、')}`
+    }
+    uploadProgress.value = savedBytes > 0
+      ? `完成，已自動壓縮節省 ${formatBytes(savedBytes)} 上傳量`
+      : '完成'
   } finally {
     uploading.value = false
     if (fileInput.value) fileInput.value.value = ''
@@ -157,6 +180,9 @@ const untaggedCount = computed(() =>
       </div>
     </div>
 
+    <p v-if="uploadProgress" class="mt-3 text-sm text-gray-500">
+      {{ uploadProgress }}
+    </p>
     <p v-if="uploadError" class="mt-3 text-sm text-red-600">
       {{ uploadError }}
     </p>

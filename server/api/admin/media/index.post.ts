@@ -4,10 +4,22 @@ import { storeUploadedImage, sniffImageType, MAX_UPLOAD_BYTES } from '../../../u
 import { setMediaLinks } from '../../../utils/media-links'
 
 export default defineEventHandler(async (event) => {
+  // 大小檢查一定要在 readMultipartFormData 之前：它會把整個請求體載進 Worker 記憶體，
+  // 實測超過約 8MB 就會直接觸發資源超限（Cloudflare 錯誤 1102），
+  // 那時候程式根本還沒執行到下面的檢查，使用者只會看到 Cloudflare 的錯誤頁。
+  const declaredSize = Number(getRequestHeader(event, 'content-length') ?? 0)
+  if (declaredSize > MAX_UPLOAD_BYTES) {
+    throw createError({
+      statusCode: 413,
+      statusMessage: `圖片檔案過大（${(declaredSize / 1024 / 1024).toFixed(1)}MB），請控制在 ${Math.floor(MAX_UPLOAD_BYTES / 1024 / 1024)}MB 以內`
+    })
+  }
+
   const form = await readMultipartFormData(event)
   const filePart = form?.find(p => p.name === 'file' && p.data?.length)
 
   if (!filePart) throw createError({ statusCode: 400, statusMessage: '請選擇要上傳的圖片檔案' })
+  // 沒有 content-length 或被低報時的第二道防線
   if (filePart.data.length > MAX_UPLOAD_BYTES) {
     throw createError({
       statusCode: 413,
