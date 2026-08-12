@@ -4,11 +4,16 @@
 > 基準 commit：`20d7173`（工作目錄乾淨，以下所有任務皆未開始）
 > 執行者：Claude Sonnet 5
 >
-> **執行進度（2026-08-12）**：Phase A（`d9cbf26`）、Phase B（`e123929`，B5 依建議跳過）、
+> **執行進度（2026-08-12）**：Phase A（`d9cbf26`）、Phase B（`e123929` + B5 於 `256c57f` 補完）、
 > Phase C（`6614fce`）、Phase D1-D3（`153866f`）已完成並驗證。**D5 部署已於 2026-08-12 執行完成**
 > （`wrangler whoami` 確認客戶帳號 → `db:verify` 全過 → 線上 D1 migration 早已是最新，非任務書
 > 原先以為的「從未套用」→ `wrangler deploy` 成功 → public 頁面/API smoke test 通過）。
 > **D4（Cloudflare Access）使用者已表示會自行處理**，等正式上線前才會通知，不用主動追問。
+>
+> 另外 2026-08-12 完整安全檢查（找到並修復儲存型 XSS、聯絡表單無上限、mass assignment、
+> 上傳偽造 Content-Type、缺安全標頭）已修復並部署，見 `b2bd733`。之後又補上 CSP nonce
+> （取代 script-src 的 unsafe-inline）於 `256c57f`，這兩項不在原始 Phase A-D 任務清單內，
+> 是額外的安全強化工作，細節見 memory `travelproject-security`。
 
 ---
 
@@ -260,7 +265,7 @@ export async function listPublishedTrips(db: DB) {
 
 ---
 
-## TASK B5 — snippet 的 `reference` 模式（可延後，做完 B1-B4 再評估）
+## TASK B5 ✅ — snippet 的 `reference` 模式（可延後，做完 B1-B4 再評估）
 
 **檔案**：`server/api/admin/trips/[id]/blocks/from-snippet.post.ts`、`server/utils/trips.ts`、`app/components/admin/ContentBlockEditor.vue`
 
