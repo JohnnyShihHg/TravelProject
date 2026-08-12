@@ -24,7 +24,9 @@ const CONTENT_TYPE_EXT: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
-  'image/gif': 'gif'
+  'image/gif': 'gif',
+  'image/heic': 'heic',
+  'image/heif': 'heif'
 }
 
 /**
@@ -57,6 +59,17 @@ export function sniffImageType(buffer: Buffer): string | null {
   // WEBP: RIFF....WEBP
   if (buffer.subarray(0, 4).toString('latin1') === 'RIFF' && buffer.subarray(8, 12).toString('latin1') === 'WEBP') {
     return 'image/webp'
+  }
+  // HEIC/HEIF：iPhone 相機的預設格式（ISOBMFF 容器，跟 mp4 是同一種外殼）。
+  // 結構是 [box size:4][box type:4]'ftyp'[major brand:4]...，brand 是
+  // heic/heix/heim/heis（HEIC 影像）或 mif1/msf1（帶 heic compatible brand 的變體）。
+  // 瀏覽器無法解碼 HEIC（Chrome 完全不支援），所以這裡放行完全是為了交給
+  // Cloudflare Images 處理——它的 transform pipeline 原生支援 HEIC 當輸入格式。
+  if (buffer.length >= 12 && buffer.subarray(4, 8).toString('latin1') === 'ftyp') {
+    const brand = buffer.subarray(8, 12).toString('latin1')
+    if (['heic', 'heix', 'heim', 'heis', 'hevc', 'hevx', 'mif1', 'msf1'].includes(brand)) {
+      return 'image/heic'
+    }
   }
   return null
 }

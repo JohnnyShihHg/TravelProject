@@ -29,6 +29,14 @@ export async function resizeImageForUpload(file: File): Promise<ResizeResult> {
   // GIF 可能是動畫，畫到 canvas 會只剩第一格，直接原樣送
   if (file.type === 'image/gif') return { file, ...original }
 
+  // HEIC/HEIF 是 iPhone 相機的預設格式。沒有瀏覽器能在 canvas/createImageBitmap 解碼它
+  // （Safari 靠 macOS/iOS 原生解碼器整個繞過這層，Chrome/Edge/Firefox 完全不支援）。
+  // 下面的 try/catch 失敗也會 fallback 到原檔，這裡提早判斷純粹是不要浪費一次注定失敗
+  // 的非同步解碼。原檔會被伺服器端的 Cloudflare Images 解碼（它原生支援 HEIC 輸入）。
+  const isHeic = file.type === 'image/heic' || file.type === 'image/heif'
+    || /\.hei[cf]$/i.test(file.name)
+  if (isHeic) return { file, ...original }
+
   let bitmap: ImageBitmap
   try {
     // imageOrientation: 'from-image' 會套用 EXIF 的旋轉資訊 ——

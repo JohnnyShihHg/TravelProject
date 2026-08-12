@@ -176,7 +176,7 @@ const untaggedCount = computed(() =>
         <UButton color="primary" icon="i-lucide-upload" :loading="uploading" @click="fileInput?.click()">
           上傳照片
         </UButton>
-        <input ref="fileInput" type="file" accept="image/*" multiple class="hidden" @change="onFileSelected">
+        <input ref="fileInput" type="file" accept="image/*,.heic,.heif" multiple class="hidden" @change="onFileSelected">
       </div>
     </div>
 

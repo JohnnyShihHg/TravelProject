@@ -145,7 +145,7 @@ async function onFileSelected(e: Event) {
         <UButton size="xs" color="primary" variant="soft" :loading="uploading" @click="pickFile">
           上傳照片
         </UButton>
-        <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileSelected">
+        <input ref="fileInput" type="file" accept="image/*,.heic,.heif" class="hidden" @change="onFileSelected">
       </div>
       <p v-if="uploadError" class="mt-2 text-xs text-red-600">
         {{ uploadError }}
