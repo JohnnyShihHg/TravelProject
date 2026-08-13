@@ -55,9 +55,10 @@ function selectDate(date: string | null) {
 <template>
   <div class="rounded-xl border border-gray-100 bg-white/95 p-4 shadow-sm sm:p-6">
     <div class="mb-4 flex items-center justify-between">
-      <UButton icon="i-lucide-chevron-left" color="neutral" variant="ghost" @click="prevMonth" />
+      <!-- 只有圖示的按鈕一定要給 aria-label，否則螢幕閱讀器只會唸出「按鈕」 -->
+      <UButton icon="i-lucide-chevron-left" color="neutral" variant="ghost" aria-label="上個月" @click="prevMonth" />
       <span class="text-sm font-semibold text-gray-900">{{ monthLabel }}</span>
-      <UButton icon="i-lucide-chevron-right" color="neutral" variant="ghost" @click="nextMonth" />
+      <UButton icon="i-lucide-chevron-right" color="neutral" variant="ghost" aria-label="下個月" @click="nextMonth" />
     </div>
 
     <div class="grid grid-cols-7 gap-1 text-center text-xs text-gray-400">
