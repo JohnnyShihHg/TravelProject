@@ -27,6 +27,19 @@ export default defineNuxtConfig({
     }
   },
 
+  // 後台頁面與寫入 API 一律不准被快取。
+  //
+  // 這裡放的是客戶留下的姓名／電話／email（聯絡表單留言頁），留在瀏覽器磁碟快取或
+  // 任何中介快取裡都不應該。目前這些回應完全沒有 cache-control 標頭，等於把行為交給
+  // 瀏覽器的啟發式快取去猜 —— 明確講清楚比較安全。
+  //
+  // 刻意只針對 /admin 與 /api/admin，不用 '/**'：那會連 /_nuxt/ 的靜態資源一起蓋掉，
+  // 而它們現在是 max-age=31536000, immutable（實測 CF-Cache-Status: HIT），不能動。
+  routeRules: {
+    '/admin/**': { headers: { 'cache-control': 'no-store' } },
+    '/api/admin/**': { headers: { 'cache-control': 'no-store' } }
+  },
+
   // 安全標頭，改用 nuxt-security 而不是手動 routeRules headers：
   // 這個模組支援 CSP 的 nonce 機制，每個 request 動態產生隨機值，讓 script-src 可以
   // 真正鎖成 'strict-dynamic' + nonce，不用再靠 'unsafe-inline' 放行所有 inline script。

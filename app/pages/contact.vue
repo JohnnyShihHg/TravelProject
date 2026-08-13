@@ -2,10 +2,19 @@
 import type { TripSummary, HeroContent } from '~/types/trip'
 import { toOgImageUrl } from '#shared/utils/image-sizes'
 
-const { data: hero } = await useFetch<HeroContent>('/api/hero', {
-  key: 'hero-contact',
-  query: { page: 'contact' }
-})
+// 兩支一起發，不要一支一支 await —— 連續 await 的話 /api/trips 要等 /api/hero
+// 回來才開始送出，而這一頁是 async component，Suspense 在這段期間會把上一頁留在
+// 畫面上不動（同 /trips 的處理，見 pages/trips/index.vue）
+const [
+  { data: hero },
+  { data: trips }
+] = await Promise.all([
+  useFetch<HeroContent>('/api/hero', {
+    key: 'hero-contact',
+    query: { page: 'contact' }
+  }),
+  useFetch<TripSummary[]>('/api/trips')
+])
 
 usePageSeo({
   title: '聯絡我們',
@@ -16,7 +25,6 @@ usePageSeo({
 })
 
 const route = useRoute()
-const { data: trips } = await useFetch<TripSummary[]>('/api/trips')
 
 const form = reactive({
   name: '',
