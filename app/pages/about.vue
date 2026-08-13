@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import type { HeroContent } from '~/types/trip'
+
+const { data: hero } = await useFetch<HeroContent>('/api/hero', {
+  key: 'hero-about',
+  query: { page: 'about' }
+})
+
 usePageSeo({
   title: '關於無穹',
   description: '無穹旅行社的品牌故事與帶團理念。我們專注在小團深度旅遊，帶你走進每一段值得記住的旅程。',
@@ -10,13 +17,9 @@ usePageSeo({
   <div>
     <!-- hero 高度跟首頁 hero 一致 -->
     <div class="relative min-h-[560px] overflow-hidden sm:min-h-[680px]">
-      <img
-        src="https://picsum.photos/seed/about-hero/1600/900"
-        alt="無穹旅行社"
-        fetchpriority="high"
-        decoding="async"
-        class="absolute inset-0 size-full object-cover"
-      >
+      <HeroCarousel :images="hero?.images ?? []" alt="無穹旅行社" dots-class="bottom-6" />
+      <!-- 後台還沒放圖時的底色，不然白底白字 -->
+      <div v-if="!hero?.images?.length" class="absolute inset-0 bg-gradient-to-br from-teal-800 via-sky-800 to-blue-900" />
       <div class="absolute inset-0 bg-black/30" />
       <div class="absolute inset-0 flex items-center justify-center pt-16">
         <h1 class="text-3xl font-bold text-white sm:text-4xl">
@@ -45,7 +48,8 @@ usePageSeo({
           主要帶團路線
         </h2>
         <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <figure v-for="route in [
+          <figure
+            v-for="route in [
             { img: 'https://picsum.photos/seed/about-japan/600/400', label: '日本賞花賞楓路線' },
             { img: 'https://picsum.photos/seed/about-korea/600/400', label: '韓國親子路線' },
             { img: 'https://picsum.photos/seed/about-taiwan/600/400', label: '台灣深度小旅行' }

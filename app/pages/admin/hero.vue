@@ -1,69 +1,223 @@
 <script setup lang="ts">
-import type { HeroContent } from '~/types/trip'
+import type { HeroContent, HeroImage, MediaLibraryItem } from '~/types/trip'
+import { resizeImageForUpload } from '~/utils/image-upload'
+import { HERO_PAGES, HERO_PAGE_LABELS, type HeroPage } from '#shared/utils/hero-pages'
 
 definePageMeta({ layout: 'admin' })
 useHead({ title: '首頁 Hero' })
 
-const { data: hero } = await useFetch<HeroContent>('/api/hero')
+const page = ref<HeroPage>('home')
 
-const form = reactive({
-  title: hero.value?.title ?? '',
-  subtitle: hero.value?.subtitle ?? '',
-  imageUrl: hero.value?.imageUrl ?? ''
+// 四個頁面各自打一次 /api/hero。key 帶上 page，不然四頁會共用同一格快取、
+// 切換分頁時先看到上一頁的圖。
+const { data: hero, refresh } = await useFetch<HeroContent>('/api/hero', {
+  key: computed(() => `admin-hero-${page.value}`),
+  query: computed(() => ({ page: page.value }))
 })
 
+const { data: library, refresh: refreshLibrary } = await useFetch<MediaLibraryItem[]>('/api/admin/media')
+
+const title = ref('')
+const subtitle = ref('')
+const selected = ref<HeroImage[]>([])
+
+// useFetch 的資料是非同步回來的、切換分頁時還會再換一次，
+// 用 watch 同步表單狀態才不會停在上一頁的內容（舊版直接在 setup 取值，切換後就不同步了）
+watch(hero, (value) => {
+  title.value = value?.title ?? ''
+  subtitle.value = value?.subtitle ?? ''
+  selected.value = [...(value?.images ?? [])]
+}, { immediate: true })
+
+const selectedIds = computed(() => new Set(selected.value.map(i => i.id)))
+
+const fileInput = ref<HTMLInputElement | null>(null)
+const uploading = ref(false)
+const pickerOpen = ref(false)
 const saving = ref(false)
 const saved = ref(false)
+const error = ref('')
+
+function add(item: { id: number, url: string }) {
+  if (selectedIds.value.has(item.id)) return
+  selected.value = [...selected.value, { id: item.id, url: item.url }]
+}
+
+function removeAt(index: number) {
+  selected.value = selected.value.filter((_, i) => i !== index)
+}
+
+function move(index: number, delta: number) {
+  const next = index + delta
+  if (next < 0 || next >= selected.value.length) return
+  const copy = [...selected.value]
+  const [item] = copy.splice(index, 1)
+  copy.splice(next, 0, item!)
+  selected.value = copy
+}
+
+function pickFile() {
+  fileInput.value?.click()
+}
+
+async function onFileSelected(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  error.value = ''
+  uploading.value = true
+  try {
+    // 跟媒體庫、行程照片走同一套：先在瀏覽器縮到 1600px，
+    // 手機原檔直接送會讓 Worker 資源超限（Cloudflare 錯誤 1102）
+    const { file: toUpload } = await resizeImageForUpload(file)
+    const form = new FormData()
+    form.append('file', toUpload, (toUpload as File).name ?? file.name)
+    const created = await $fetch<MediaLibraryItem>('/api/admin/media', { method: 'POST', body: form })
+    await refreshLibrary()
+    add(created)
+  } catch (err) {
+    error.value = (err as { data?: { statusMessage?: string } })?.data?.statusMessage ?? '上傳失敗'
+  } finally {
+    uploading.value = false
+    if (fileInput.value) fileInput.value.value = ''
+  }
+}
 
 async function save() {
   saving.value = true
   saved.value = false
+  error.value = ''
   try {
-    await $fetch('/api/admin/hero', { method: 'PUT', body: form })
+    await $fetch('/api/admin/hero', {
+      method: 'PUT',
+      body: {
+        page: page.value,
+        title: title.value,
+        subtitle: subtitle.value,
+        mediaIds: selected.value.map(i => i.id)
+      }
+    })
+    await refresh()
     saved.value = true
+  } catch (err) {
+    error.value = (err as { data?: { statusMessage?: string } })?.data?.statusMessage ?? '儲存失敗'
   } finally {
     saving.value = false
   }
 }
 
-function randomizeImage() {
-  form.imageUrl = `https://picsum.photos/seed/hero-${Date.now()}/1920/1080`
-}
+// 切換分頁時把「已儲存」收掉，不然會讓人以為這一頁也存過了
+watch(page, () => {
+  saved.value = false
+  error.value = ''
+  pickerOpen.value = false
+})
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+  <div class="mx-auto max-w-3xl px-4 py-8 sm:px-6">
     <UButton to="/admin" color="neutral" variant="link" icon="i-lucide-arrow-left" class="mb-4 px-0">
       返回後台
     </UButton>
     <h1 class="text-2xl font-bold text-gray-900">
-      編輯首頁 Hero
+      編輯頁面 Hero
     </h1>
+    <p class="mt-1 text-sm text-gray-500">
+      每個頁面最上方的大圖。放兩張以上就會自動輪播（下方圓點可切換）。
+    </p>
 
-    <form class="mt-6 space-y-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6" @submit.prevent="save">
-      <UFormField label="標題">
-        <UInput v-model="form.title" class="w-full" />
-      </UFormField>
-      <UFormField label="副標">
-        <UInput v-model="form.subtitle" class="w-full" />
-      </UFormField>
-      <UFormField label="背景圖片網址">
-        <div class="flex flex-col gap-2 sm:flex-row">
-          <UInput v-model="form.imageUrl" class="w-full" />
-          <UButton color="neutral" variant="soft" class="shrink-0" @click="randomizeImage">
-            隨機換圖（假資料）
-          </UButton>
+    <div class="mt-6 flex flex-wrap gap-2">
+      <UButton
+        v-for="p in HERO_PAGES"
+        :key="p"
+        :color="page === p ? 'primary' : 'neutral'"
+        :variant="page === p ? 'solid' : 'outline'"
+        @click="page = p"
+      >
+        {{ HERO_PAGE_LABELS[p] }}
+      </UButton>
+    </div>
+
+    <form class="mt-4 space-y-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6" @submit.prevent="save">
+      <template v-if="page === 'home'">
+        <UFormField label="標題">
+          <UInput v-model="title" class="w-full" />
+        </UFormField>
+        <UFormField label="副標">
+          <UInput v-model="subtitle" class="w-full" />
+        </UFormField>
+      </template>
+
+      <div>
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-gray-900">
+            輪播圖片
+            <span class="ml-1 font-normal text-gray-400">{{ selected.length }} 張</span>
+          </h2>
+          <div class="flex gap-2">
+            <UButton size="sm" color="neutral" variant="outline" icon="i-lucide-image" @click="pickerOpen = !pickerOpen">
+              從圖片庫挑選
+            </UButton>
+            <UButton size="sm" color="primary" icon="i-lucide-upload" :loading="uploading" @click="pickFile">
+              上傳新照片
+            </UButton>
+          </div>
         </div>
-      </UFormField>
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*,.heic,.heif"
+          class="hidden"
+          @change="onFileSelected"
+        >
 
-      <div v-if="form.imageUrl" class="overflow-hidden rounded-lg">
-        <img :src="form.imageUrl" class="h-40 w-full object-cover">
+        <div v-if="selected.length" class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div
+            v-for="(img, index) in selected"
+            :key="img.id"
+            class="group relative overflow-hidden rounded-lg border border-gray-200"
+          >
+            <AppImage :src="img.url" :width="400" alt="" loading="lazy" class="aspect-video w-full object-cover" />
+            <UBadge v-if="index === 0" color="primary" size="xs" class="absolute left-1 top-1">
+              第一張
+            </UBadge>
+            <div class="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-black/50 p-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+              <UButton size="xs" color="neutral" icon="i-lucide-arrow-left" aria-label="往前移" :disabled="index === 0" @click="move(index, -1)" />
+              <UButton size="xs" color="neutral" icon="i-lucide-arrow-right" aria-label="往後移" :disabled="index === selected.length - 1" @click="move(index, 1)" />
+              <UButton size="xs" color="error" icon="i-lucide-trash-2" aria-label="移除" @click="removeAt(index)" />
+            </div>
+          </div>
+        </div>
+        <p v-else class="mt-3 rounded-lg border border-dashed border-gray-200 p-6 text-center text-xs text-gray-400">
+          還沒有圖片。沒有圖時這一頁的 hero 會顯示漸層底色。
+        </p>
+
+        <div v-if="pickerOpen" class="mt-3 rounded-lg border border-gray-200 p-3">
+          <p v-if="!library?.length" class="text-xs text-gray-400">
+            圖片庫是空的，先用「上傳新照片」加入。
+          </p>
+          <div v-else class="grid max-h-72 grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-5">
+            <button
+              v-for="m in library"
+              :key="m.id"
+              type="button"
+              class="overflow-hidden rounded border transition"
+              :class="selectedIds.has(m.id) ? 'border-primary opacity-40' : 'border-gray-200 hover:border-primary'"
+              :disabled="selectedIds.has(m.id)"
+              @click="add(m)"
+            >
+              <AppImage :src="m.url" :width="400" alt="" loading="lazy" class="aspect-square w-full object-cover" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      <UButton type="submit" color="primary" :loading="saving">
-        儲存
-      </UButton>
-      <span v-if="saved" class="ml-3 text-sm text-green-600">已儲存</span>
+      <div class="flex items-center gap-3">
+        <UButton type="submit" color="primary" :loading="saving">
+          儲存
+        </UButton>
+        <span v-if="saved" class="text-sm text-green-600">已儲存</span>
+        <span v-if="error" class="text-sm text-red-600">{{ error }}</span>
+      </div>
     </form>
   </div>
 </template>

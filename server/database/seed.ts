@@ -1,5 +1,5 @@
 import { getDB } from '../utils/db'
-import { trips, batches, tags, tripTags, destinations, tripDestinations, spots, tripSpots, media, mediaDestinations, mediaSpots, tripImages, contactSubmissions, heroContent, contentBlocks, contentSnippets } from './schema'
+import { trips, batches, tags, tripTags, destinations, tripDestinations, spots, tripSpots, media, mediaDestinations, mediaSpots, tripImages, contactSubmissions, heroContent, heroImages, contentBlocks, contentSnippets } from './schema'
 import type { ContentBlockType } from './schema'
 import { eq } from 'drizzle-orm'
 import type { BlockData, DailyItineraryDay, FlightLeg } from '../utils/content-blocks'
@@ -412,7 +412,21 @@ export async function seed() {
 
   await db.insert(heroContent).values({
     title: '無穹旅行社',
-    subtitle: '帶你走進每一段值得記住的旅程',
-    imageUrl: placeholderImage('hero-main', 1920, 1080)
+    subtitle: '帶你走進每一段值得記住的旅程'
   }).run()
+
+  // hero 的圖來自媒體庫（後台可上傳、可排序）。這裡挑幾張已 seed 的照片掛上去，
+  // 首頁才有多張圖可以輪播 —— 只給一張的話輪播的行為根本測不到。
+  const heroMedia = await db.select().from(media).limit(6)
+  const heroPages: { page: string, mediaIds: number[] }[] = [
+    { page: 'home', mediaIds: heroMedia.slice(0, 3).map(m => m.id) },
+    { page: 'trips', mediaIds: heroMedia.slice(3, 5).map(m => m.id) },
+    { page: 'about', mediaIds: heroMedia.slice(5, 6).map(m => m.id) }
+    // contact 刻意留空，用來確認「沒有圖時退回漸層背景」那條路徑不會壞
+  ]
+  for (const { page, mediaIds } of heroPages) {
+    for (const [index, mediaId] of mediaIds.entries()) {
+      await db.insert(heroImages).values({ page, mediaId, sortOrder: index }).run()
+    }
+  }
 }

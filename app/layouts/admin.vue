@@ -47,7 +47,7 @@ const navGroups: NavGroup[] = [
   {
     title: '網站',
     items: [
-      { label: '首頁 Hero', to: '/admin/hero', icon: 'i-lucide-layout-template', match: p => p.startsWith('/admin/hero') },
+      { label: '頁面 Hero 圖', to: '/admin/hero', icon: 'i-lucide-layout-template', match: p => p.startsWith('/admin/hero') },
       { label: '聯絡表單留言', to: '/admin/contacts', icon: 'i-lucide-inbox', match: p => p.startsWith('/admin/contacts') }
     ]
   }

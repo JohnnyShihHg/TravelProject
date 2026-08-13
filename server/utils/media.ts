@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import { mkdirSync, writeFileSync, readFileSync, existsSync, unlinkSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import type { R2Bucket, ImagesBinding } from '@cloudflare/workers-types'
+import { DERIVATIVE_WIDTHS, type DerivativeWidth } from '#shared/utils/image-sizes'
 
 interface CloudflareMediaEnv {
   bucket: R2Bucket
@@ -115,6 +116,58 @@ export async function storeUploadedImage(event: H3Event, fileBuffer: Buffer, con
   return { key, url: `/media/${key}` }
 }
 
+/** 由原始 key 直接推導，刪除時才不需要對 R2 做 list() */
+export function derivedKey(key: string, width: number) {
+  return `derived/${width}/${key}`
+}
+
+/**
+ * 取得指定寬度的縮圖，沒有就當場轉一張並寫回 R2。
+ *
+ * 為什麼是「懶生成 + 存回 R2」而不是上傳時一次產生所有尺寸：
+ * 1. 站上已經有幾十張用舊邏輯上傳的照片，懶生成讓它們也自動受惠，不需要重新上傳或寫回填腳本。
+ * 2. 上傳路徑不會變慢 —— 一次請求裡連跑四次 transform 會逼近 Worker 的資源上限。
+ * 3. `*.workers.dev` 上 Cache API 是 no-op，不能靠邊緣快取避免重複轉換，
+ *    把結果寫回 R2 才能保證每個尺寸只轉一次。
+ *
+ * 轉換失敗時回傳 null，由呼叫端退回原圖 —— 縮圖是最佳化，不該讓頁面破圖。
+ */
+export async function getOrCreateDerivative(
+  cf: CloudflareMediaEnv,
+  key: string,
+  width: DerivativeWidth
+): Promise<ArrayBuffer | null> {
+  const cacheKey = derivedKey(key, width)
+
+  const cached = await cf.bucket.get(cacheKey)
+  if (cached) return cached.arrayBuffer()
+
+  const original = await cf.bucket.get(key)
+  if (!original) return null
+
+  try {
+    const inputStream = original.body as unknown as Parameters<ImagesBinding['input']>[0]
+    const processed = (
+      await cf.images.input(inputStream)
+        // 只給 width + scale-down：高度依原比例縮，且絕不放大 —— 原圖比要求的還窄時
+        // 會原樣輸出，不會硬拉大變模糊。
+        .transform({ width, fit: 'scale-down' })
+        .output({ format: 'image/webp', quality: 75 })
+    ).response()
+
+    // 同 storeUploadedImage：R2 的 put() 要求串流有已知長度，Images 的輸出沒有，
+    // 一定要先讀成 ArrayBuffer，否則本機 wrangler dev 會直接丟錯。
+    const bytes = await processed.arrayBuffer()
+    await cf.bucket.put(cacheKey, bytes, {
+      httpMetadata: { contentType: 'image/webp' }
+    })
+    return bytes
+  } catch (err) {
+    console.warn(`[media] 產生 ${width}px 縮圖失敗，改送原圖 ${key}:`, err)
+    return null
+  }
+}
+
 const EXT_CONTENT_TYPE: Record<string, string> = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
@@ -131,7 +184,8 @@ export async function deleteStoredImage(event: H3Event, key: string): Promise<vo
   const cf = getCloudflareMediaEnv(event)
   try {
     if (cf) {
-      await cf.bucket.delete(key)
+      // 衍生尺寸的 key 可以直接推導，不需要 list()；漏刪會留下永遠不會再被讀到的孤兒檔案
+      await cf.bucket.delete([key, ...DERIVATIVE_WIDTHS.map(w => derivedKey(key, w))])
       return
     }
     const localPath = join(LOCAL_UPLOAD_DIR, key)

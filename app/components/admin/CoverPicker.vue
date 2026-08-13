@@ -15,7 +15,7 @@ const selected = computed(() => props.library.find(m => m.id === modelValue.valu
   <div>
     <div class="flex items-start gap-3">
       <div class="size-20 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-        <img v-if="selected" :src="selected.url" class="size-full object-cover">
+        <AppImage v-if="selected" :src="selected.url" :width="400" alt="" class="size-full object-cover" />
         <div v-else class="flex size-full items-center justify-center">
           <UIcon name="i-lucide-image-off" class="size-5 text-gray-300" />
         </div>
@@ -40,7 +40,7 @@ const selected = computed(() => props.library.find(m => m.id === modelValue.valu
           :class="modelValue === m.id ? 'border-primary' : 'border-transparent hover:border-gray-300'"
           @click="modelValue = m.id; open = false"
         >
-          <img :src="m.url" class="aspect-square w-full object-cover">
+          <AppImage :src="m.url" :width="400" alt="" loading="lazy" class="aspect-square w-full object-cover" />
         </button>
       </div>
       <p v-else class="text-xs text-gray-400">

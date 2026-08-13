@@ -88,7 +88,7 @@ async function removeImage(imageId: number) {
       </h3>
       <div v-if="images.length" class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
         <div v-for="img in images" :key="img.id" class="group relative overflow-hidden rounded-lg border border-gray-200">
-          <img :src="img.url" class="aspect-square w-full object-cover">
+          <AppImage :src="img.url" :width="400" alt="" loading="lazy" class="aspect-square w-full object-cover" />
           <UBadge v-if="img.isCover" color="primary" size="xs" class="absolute left-1 top-1">
             封面
           </UBadge>
@@ -130,7 +130,7 @@ async function removeImage(imageId: number) {
           :class="attachedMediaUrls.has(m.url) ? 'ring-2 ring-primary' : ''"
           @click="attach(m.id)"
         >
-          <img :src="m.url" class="aspect-square w-full object-cover">
+          <AppImage :src="m.url" :width="400" alt="" loading="lazy" class="aspect-square w-full object-cover" />
         </button>
       </div>
       <p v-else class="mt-2 text-xs text-gray-400">

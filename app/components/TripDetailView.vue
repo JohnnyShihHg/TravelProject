@@ -91,7 +91,7 @@ onBeforeUnmount(() => observer?.disconnect())
 
     <!-- hero 高度跟首頁 hero 一致 -->
     <div class="relative min-h-[560px] overflow-hidden sm:min-h-[680px]">
-      <img v-if="trip.coverImageUrl" :src="trip.coverImageUrl" :alt="trip.title" fetchpriority="high" decoding="async" class="absolute inset-0 size-full object-cover">
+      <AppImage v-if="trip.coverImageUrl" :src="trip.coverImageUrl" :alt="trip.title" sizes="100vw" fetchpriority="high" decoding="async" class="absolute inset-0 size-full object-cover" />
       <div class="absolute inset-0 bg-black/30" />
       <div class="absolute inset-x-0 bottom-0 mx-auto max-w-[1200px] px-4 pb-8 sm:px-6">
         <div class="flex flex-wrap gap-2">
@@ -206,7 +206,7 @@ onBeforeUnmount(() => observer?.disconnect())
             class="mt-4"
             :ui="{ item: 'basis-1/2 sm:basis-1/3' }"
           >
-            <img :src="item.url" loading="lazy" decoding="async" class="aspect-square w-full rounded-lg object-cover">
+            <AppImage :src="item.url" :alt="`${trip.title} 行程相簿照片`" sizes="(min-width: 640px) 400px, 50vw" loading="lazy" decoding="async" class="aspect-square w-full rounded-lg object-cover" />
           </UCarousel>
         </div>
       </article>

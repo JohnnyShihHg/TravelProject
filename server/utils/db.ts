@@ -211,6 +211,24 @@ function applyLocalColumnMigrations(sqlite: import('better-sqlite3').Database) {
   }
   migrateLegacyTagsSchema(sqlite)
   migrateLegacyMediaCategory(sqlite)
+  migrateLegacyHeroImage(sqlite)
+}
+
+// 對應 migrations/0006：hero_content.image_url（單張自由文字網址）改成 hero_images 關聯。
+// 同樣用 DROP COLUMN 而不是重建 hero_content，理由見 migrateLegacyMediaCategory。
+function migrateLegacyHeroImage(sqlite: import('better-sqlite3').Database) {
+  const columns = sqlite.prepare('PRAGMA table_info(hero_content)').all() as { name: string }[]
+  if (!columns.some(c => c.name === 'image_url')) return // 已經是新結構
+
+  const run = sqlite.transaction(() => {
+    sqlite.exec(`
+      INSERT INTO hero_images (page, media_id, sort_order)
+      SELECT 'home', m.id, 0 FROM hero_content h JOIN media m ON m.url = h.image_url;
+
+      ALTER TABLE hero_content DROP COLUMN image_url;
+    `)
+  })
+  run()
 }
 
 // 對應 migrations/0004：media.category（自由文字地名）改成 media_destinations 關聯。
@@ -359,9 +377,17 @@ export function ensureSchema() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       subtitle TEXT NOT NULL,
-      image_url TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT (current_timestamp)
     );
+
+    CREATE TABLE IF NOT EXISTS hero_images (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      page TEXT NOT NULL DEFAULT 'home',
+      media_id INTEGER NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE INDEX IF NOT EXISTS hero_images_page_idx ON hero_images(page, sort_order);
 
     CREATE TABLE IF NOT EXISTS contact_submissions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

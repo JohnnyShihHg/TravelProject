@@ -208,7 +208,7 @@ const untaggedCount = computed(() =>
         class="flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm"
       >
         <a :href="item.url" target="_blank" rel="noopener noreferrer" class="block bg-gray-50">
-          <img :src="item.url" class="aspect-square w-full object-cover" loading="lazy">
+          <AppImage :src="item.url" :width="400" alt="" loading="lazy" class="aspect-square w-full object-cover" />
         </a>
         <div class="flex flex-1 flex-col gap-2 p-3">
           <div class="flex flex-wrap gap-1">
@@ -242,7 +242,7 @@ const untaggedCount = computed(() =>
       <template #body>
         <div class="space-y-5">
           <div v-if="editing" class="h-32 overflow-hidden rounded-lg bg-gray-50">
-            <img :src="editing.url" class="size-full object-contain">
+            <AppImage :src="editing.url" :width="800" alt="" class="size-full object-contain" />
           </div>
 
           <UFormField label="地點" help="掛上之後，該地點頁的相關照片會自動出現這張">

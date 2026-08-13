@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import type { TripSummary } from '~/types/trip'
+import type { TripSummary, HeroContent } from '~/types/trip'
+
+const { data: hero } = await useFetch<HeroContent>('/api/hero', {
+  key: 'hero-contact',
+  query: { page: 'contact' }
+})
 
 usePageSeo({
   title: '聯絡我們',
@@ -46,7 +51,9 @@ async function submit() {
   <div>
     <!-- hero 高度跟首頁 hero 一致 -->
     <div class="relative min-h-[560px] overflow-hidden sm:min-h-[680px]">
-      <img src="https://picsum.photos/seed/contact-hero/1600/700" alt="聯絡無穹旅行社" fetchpriority="high" decoding="async" class="absolute inset-0 size-full object-cover">
+      <HeroCarousel :images="hero?.images ?? []" alt="聯絡無穹旅行社" dots-class="bottom-6" />
+      <!-- 後台還沒放圖時的底色，不然白底白字 -->
+      <div v-if="!hero?.images?.length" class="absolute inset-0 bg-gradient-to-br from-teal-800 via-sky-800 to-blue-900" />
       <div class="absolute inset-0 bg-black/30" />
       <div class="absolute inset-0 flex items-center justify-center pt-16">
         <h1 class="text-3xl font-bold text-white sm:text-4xl">

@@ -117,6 +117,15 @@ check('contact_submissions.is_read 已加上', cols('contact_submissions').inclu
 // 既有留言必須視為已讀，否則功能一上線儀表板就跳出一堆假的待辦
 check('既有留言全部視為已讀', one('SELECT COUNT(*) c FROM contact_submissions WHERE is_read = 0').c, 0)
 
+console.log('\nHero 圖片（0006：單張自由文字網址 → media 關聯）：')
+check('hero_images 已建立', cols('hero_images').length > 0, true)
+check('hero_content.image_url 已移除', cols('hero_content').includes('image_url'), false)
+// hero_content 是 singleton，DROP COLUMN 不該把那一列弄丟
+check('hero_content 仍有唯一那一列', one('SELECT COUNT(*) c FROM hero_content').c, 1)
+// 0002 的 seed 用的是 picsum 假圖，JOIN 不到 media，所以搬不出任何一列。
+// 這一項是在確認 backfill 的 JOIN 沒有寫錯而誤搬（例如不小心把所有照片都掛上去）。
+check('picsum 假圖沒有被當成媒體庫圖片搬進來', one('SELECT COUNT(*) c FROM hero_images').c, 0)
+
 console.log('\n完整性：')
 check('foreign_key_check 無違規', db.pragma('foreign_key_check').length, 0)
 

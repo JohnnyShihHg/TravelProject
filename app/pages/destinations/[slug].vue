@@ -61,14 +61,15 @@ useJsonLd((abs) => {
 <template>
   <div v-if="destination">
     <section class="relative flex min-h-[320px] flex-col justify-end overflow-hidden pt-16 sm:min-h-[400px]">
-      <img
+      <AppImage
         v-if="destination.coverImageUrl"
         :src="destination.coverImageUrl"
         :alt="destination.name"
+        sizes="100vw"
         fetchpriority="high"
         decoding="async"
         class="absolute inset-0 size-full object-cover"
-      >
+      />
       <div v-else class="absolute inset-0 bg-gradient-to-br from-teal-800 via-sky-800 to-blue-900" />
       <div class="absolute inset-0 bg-black/40" />
 

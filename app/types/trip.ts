@@ -235,9 +235,15 @@ export interface CalendarBatch {
   tripTitle: string
 }
 
-export interface HeroContent {
+export interface HeroImage {
   id: number
-  title: string
-  subtitle: string
-  imageUrl: string
+  url: string
+}
+
+/** /api/hero?page= 的回傳。title/subtitle 只有首頁有，其他三頁只管圖片 */
+export interface HeroContent {
+  page: string
+  title: string | null
+  subtitle: string | null
+  images: HeroImage[]
 }

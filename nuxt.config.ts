@@ -3,9 +3,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
+  // @nuxt/image 已移除：它預設的 IPX provider 需要 sharp 與檔案系統，在 cloudflare_module
+  // preset 下根本不能執行，而且從安裝以來沒有任何元件用過它。響應式圖片改用自家的
+  // <AppImage> + /media/<key>?w=（server/routes/media/[...key].get.ts 用 Images binding 產生）。
   modules: [
     '@nuxt/ui',
-    '@nuxt/image',
     '@nuxt/icon',
     '@nuxt/fonts',
     '@nuxt/eslint',

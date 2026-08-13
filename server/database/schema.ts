@@ -157,12 +157,20 @@ export const contentSnippets = sqliteTable('content_snippets', {
   createdAt: text('created_at').notNull().default(sql`(current_timestamp)`)
 })
 
+// 只服務首頁的標題／副標；圖片一律走 heroImages（其他三頁沒有可編輯的文案，所以只有圖片）
 export const heroContent = sqliteTable('hero_content', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
   subtitle: text('subtitle').notNull(),
-  imageUrl: text('image_url').notNull(),
   updatedAt: text('updated_at').notNull().default(sql`(current_timestamp)`)
+})
+
+// 四個頁面的 hero 輪播圖共用一張表，用 page 區分（home / trips / about / contact）
+export const heroImages = sqliteTable('hero_images', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  page: text('page').notNull().default('home'),
+  mediaId: integer('media_id').notNull().references(() => media.id, { onDelete: 'cascade' }),
+  sortOrder: integer('sort_order').notNull().default(0)
 })
 
 export const contactSubmissions = sqliteTable('contact_submissions', {

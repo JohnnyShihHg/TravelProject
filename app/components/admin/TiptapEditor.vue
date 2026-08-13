@@ -161,7 +161,7 @@ async function onFileSelected(e: Event) {
           class="overflow-hidden rounded-lg border border-gray-200 hover:ring-2 hover:ring-primary"
           @click="insertImage(m.url)"
         >
-          <img :src="m.url" class="aspect-square w-full object-cover">
+          <AppImage :src="m.url" :width="400" alt="" loading="lazy" class="aspect-square w-full object-cover" />
         </button>
       </div>
       <p v-else class="mt-2 text-xs text-gray-400">

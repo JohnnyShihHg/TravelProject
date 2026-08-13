@@ -154,7 +154,7 @@ async function confirmDelete() {
         class="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
       >
         <div class="h-32 bg-gray-50">
-          <img v-if="spot.coverImageUrl" :src="spot.coverImageUrl" class="size-full object-cover">
+          <AppImage v-if="spot.coverImageUrl" :src="spot.coverImageUrl" :width="400" alt="" loading="lazy" class="size-full object-cover" />
           <div v-else class="flex size-full items-center justify-center">
             <UIcon name="i-lucide-image-off" class="size-6 text-gray-300" />
           </div>

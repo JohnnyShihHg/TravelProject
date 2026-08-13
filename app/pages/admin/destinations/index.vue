@@ -168,7 +168,7 @@ function usageLabel(d: AdminDestination) {
         <!-- 國家 -->
         <div class="flex flex-wrap items-center gap-3">
           <div class="size-12 shrink-0 overflow-hidden rounded-lg bg-gray-50">
-            <img v-if="group.country.coverImageUrl" :src="group.country.coverImageUrl" class="size-full object-cover">
+            <AppImage v-if="group.country.coverImageUrl" :src="group.country.coverImageUrl" :width="400" alt="" loading="lazy" class="size-full object-cover" />
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">
@@ -204,7 +204,7 @@ function usageLabel(d: AdminDestination) {
           >
             <UIcon name="i-lucide-corner-down-right" class="size-4 shrink-0 text-gray-300" />
             <div class="size-9 shrink-0 overflow-hidden rounded bg-gray-50">
-              <img v-if="city.coverImageUrl" :src="city.coverImageUrl" class="size-full object-cover">
+              <AppImage v-if="city.coverImageUrl" :src="city.coverImageUrl" :width="400" alt="" loading="lazy" class="size-full object-cover" />
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">

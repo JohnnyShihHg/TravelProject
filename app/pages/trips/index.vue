@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TripSummary, CalendarBatch, TripTag, Destination, Spot } from '~/types/trip'
+import type { TripSummary, CalendarBatch, TripTag, Destination, Spot, HeroContent } from '~/types/trip'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +21,10 @@ usePageSeo({
   path: '/trips'
 })
 
+const { data: hero } = await useFetch<HeroContent>('/api/hero', {
+  key: 'hero-trips',
+  query: { page: 'trips' }
+})
 const { data: batches } = await useFetch<CalendarBatch[]>('/api/batches')
 const { data: allTags } = await useFetch<TripTag[]>('/api/tags')
 const { data: allDestinations } = await useFetch<Destination[]>('/api/destinations')
@@ -121,13 +125,9 @@ function submitSearch() {
     <!-- hero 高度跟首頁 hero 一致 -->
     <!-- pt-16 補償疊在上方的固定導覽列，justify-center 讓內容在加高後的框裡置中 -->
     <section class="relative flex min-h-[560px] flex-col justify-center overflow-hidden pt-16 sm:min-h-[680px]">
-      <img
-        src="https://picsum.photos/seed/trip-calendar/1600/500"
-        alt=""
-        fetchpriority="high"
-        decoding="async"
-        class="absolute inset-0 size-full object-cover"
-      >
+      <HeroCarousel :images="hero?.images ?? []" alt="探索無穹旅行社的所有行程" dots-class="bottom-3" />
+      <!-- 後台還沒放圖時的底色。上面那層漸層是半透明的，沒有底圖會整片發白 -->
+      <div v-if="!hero?.images?.length" class="absolute inset-0 bg-gradient-to-br from-teal-800 via-sky-800 to-blue-900" />
       <div class="absolute inset-0 bg-gradient-to-br from-teal-900/40 via-sky-900/30 to-blue-950/40" />
 
       <div class="relative z-10 mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -138,9 +138,15 @@ function submitSearch() {
             <form class="flex w-full flex-row items-center gap-2 rounded-full bg-white p-2 shadow-lg" @submit.prevent="submitSearch">
               <UIcon name="i-lucide-search" class="ml-3 size-5 shrink-0 text-gray-400" />
               <div class="relative min-w-0 flex-1">
+                <!--
+                  aria-label 不能省：下面那層輪播式提示詞是疊上去的 <span>，
+                  取代靜態 placeholder 的同時也把 placeholder 帶來的弱輔助一起拿掉了，
+                  沒有它螢幕閱讀器唸到這個欄位時是完全無聲的。
+                -->
                 <input
                   v-model="q"
                   type="text"
+                  aria-label="搜尋行程"
                   class="w-full min-w-0 border-none bg-transparent text-sm text-gray-900 outline-none"
                   @input="onSearchInput"
                 >

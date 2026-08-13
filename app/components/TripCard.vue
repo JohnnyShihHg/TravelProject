@@ -16,14 +16,15 @@ const primaryLabel = computed(() =>
     class="group flex h-full flex-col overflow-hidden rounded-xl border border-gray-100 shadow-sm transition-shadow hover:shadow-md"
   >
     <div class="h-40 shrink-0 overflow-hidden bg-gray-100">
-      <img
+      <AppImage
         v-if="trip.coverImageUrl"
         :src="trip.coverImageUrl"
         :alt="trip.title"
+        sizes="(min-width: 1024px) 300px, (min-width: 640px) 50vw, 100vw"
         loading="lazy"
         decoding="async"
         class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-      >
+      />
     </div>
     <div class="flex flex-1 flex-col p-4">
       <div class="flex min-w-0 flex-nowrap items-center gap-2">

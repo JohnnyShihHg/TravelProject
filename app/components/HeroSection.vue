@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { HeroContent, HeroChoice } from '~/types/trip'
 
-const { data: hero } = await useFetch<HeroContent>('/api/hero')
+// 四頁的 hero 各自一組快取（key 不同），不要共用同一格，否則會拿到別頁的圖
+const { data: hero } = await useFetch<HeroContent>('/api/hero', {
+  key: 'hero-home',
+  query: { page: 'home' }
+})
 
 // 選中的入口由首頁持有，桌機版要展開的區塊在 hero 外面
 const selected = defineModel<HeroChoice | null>('selected', { default: null })
@@ -47,14 +51,16 @@ async function toggle(value: HeroChoice, index: number) {
 
 <template>
   <section class="relative flex min-h-[560px] flex-col overflow-hidden sm:min-h-[680px]">
-    <img
-      v-if="hero?.imageUrl"
-      :src="hero.imageUrl"
-      alt=""
-      fetchpriority="high"
-      decoding="async"
-      class="absolute inset-0 size-full object-cover"
-    >
+    <!--
+      圓點：桌機的入口列只有一排（約 80px），放 bottom-24 剛好在它上面；
+      手機版入口列是四列疊起來的（超過 300px），底部整片都是內容，
+      所以改放到上方、避開固定導覽列的高度。
+    -->
+    <HeroCarousel
+      :images="hero?.images ?? []"
+      :alt="`${hero?.title ?? '無穹旅行社'}主視覺`"
+      dots-class="top-20 bottom-auto lg:bottom-24 lg:top-auto"
+    />
     <div class="absolute inset-0 bg-gray-900/35" />
     <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-transparent to-gray-900/40" />
 
