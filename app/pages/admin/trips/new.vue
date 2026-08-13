@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TripTag } from '~/types/trip'
 
-definePageMeta({ layout: 'admin', heavyLoading: true })
+definePageMeta({ layout: 'admin' })
 useHead({ title: '新增行程' })
 
 const router = useRouter()

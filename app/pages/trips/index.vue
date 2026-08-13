@@ -21,14 +21,37 @@ usePageSeo({
   path: '/trips'
 })
 
-const { data: hero } = await useFetch<HeroContent>('/api/hero', {
-  key: 'hero-trips',
-  query: { page: 'trips' }
-})
-const { data: batches } = await useFetch<CalendarBatch[]>('/api/batches')
-const { data: allTags } = await useFetch<TripTag[]>('/api/tags')
-const { data: allDestinations } = await useFetch<Destination[]>('/api/destinations')
-const { data: allSpots } = await useFetch<Spot[]>('/api/spots')
+// 六支資料一次發出去並行等，不要一支一支 await。
+//
+// 連續 await 的話，每一支都要等前一支回來才開始送出，實測線上是
+// hero 0.40 + batches 0.42 + tags 0.23 + destinations 0.24 + spots 0.26 + trips 0.44
+// ≈ 2.0 秒的純等待。而且這一頁是 async component，Suspense 在這段期間會把「上一頁」
+// 留在畫面上不動 —— 使用者看到的是點了沒反應、隔很久才整頁跳過去，中間連 BAR 都不會先出現。
+// 並行之後只等最慢的那一支（≈0.44 秒）。
+const [
+  { data: hero },
+  { data: batches },
+  { data: allTags },
+  { data: allDestinations },
+  { data: allSpots },
+  { data: trips, refresh }
+] = await Promise.all([
+  useFetch<HeroContent>('/api/hero', {
+    key: 'hero-trips',
+    query: { page: 'trips' }
+  }),
+  useFetch<CalendarBatch[]>('/api/batches'),
+  useFetch<TripTag[]>('/api/tags'),
+  useFetch<Destination[]>('/api/destinations'),
+  useFetch<Spot[]>('/api/spots'),
+  useFetch<TripSummary[]>('/api/trips', {
+    query: computed(() => ({
+      ...(q.value ? { q: q.value } : {}),
+      ...(scope.value ? { scope: scope.value } : {}),
+      ...(tag.value ? { tag: tag.value } : {})
+    }))
+  })
+])
 
 // tag 參數同時可能是主題標籤、地點或景點的 slug（見 server/api/trips/index.get.ts），
 // 顯示時要把 slug 換回中文，不然使用者會看到英文網址片段
@@ -47,14 +70,6 @@ const activeFilters = computed(() => {
   const list: string[] = []
   if (scope.value) list.push(SCOPE_LABEL[scope.value]!)
   return list
-})
-
-const { data: trips, refresh } = await useFetch<TripSummary[]>('/api/trips', {
-  query: computed(() => ({
-    ...(q.value ? { q: q.value } : {}),
-    ...(scope.value ? { scope: scope.value } : {}),
-    ...(tag.value ? { tag: tag.value } : {})
-  }))
 })
 
 // 從 tag 切過來時，把中文名稱帶進搜尋框，製造「透過搜尋 bar 查到的」錯覺；

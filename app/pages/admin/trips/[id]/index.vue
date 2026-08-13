@@ -3,7 +3,7 @@ import { TRIP_BADGES } from '~/types/trip'
 import type { TripDetail, TripTag, TripBatch } from '~/types/trip'
 import type { Stage } from '~/components/admin/StageNav.vue'
 
-definePageMeta({ layout: 'admin', heavyLoading: true })
+definePageMeta({ layout: 'admin' })
 
 const route = useRoute()
 const router = useRouter()
