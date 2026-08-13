@@ -9,6 +9,14 @@
 > （`wrangler whoami` 確認客戶帳號 → `db:verify` 全過 → 線上 D1 migration 早已是最新，非任務書
 > 原先以為的「從未套用」→ `wrangler deploy` 成功 → public 頁面/API smoke test 通過）。
 > **D4（Cloudflare Access）使用者已表示會自行處理**，等正式上線前才會通知，不用主動追問。
+> ⚠️ 2026-08-13 更正：D4 **需要先買自訂網域**才做得到「只鎖後台、前台維持公開」，
+> workers.dev 只能整站鎖。詳見 TASK D4 章節。
+>
+> **2026-08-13：專案功能收工。** og:image 全站補齊（首頁後台可上傳並拖拉裁切 1200×630，
+> 其他頁自動用自己的照片掛 `?og=1`）、通用裁切元件 `ImageCropDialog.vue`、hero 改成單一行
+> 16px 標題（migration 0008）、hero 遮罩調亮與導覽列透明、效能檢查（結論：瓶頸是 TTFB 與
+> 網路延遲，不是程式碼；前台圖片與 bundle 已無可調）。使用者明確表示**暫時不再新增功能**，
+> 等客戶驗收後才處理 Access。
 >
 > 另外 2026-08-12 完整安全檢查（找到並修復儲存型 XSS、聯絡表單無上限、mass assignment、
 > 上傳偽造 Content-Type、缺安全標頭）已修復並部署，見 `b2bd733`。之後又補上 CSP nonce
@@ -505,7 +513,27 @@ const relationMatch = t.tags.some(tag => tag.name.toLowerCase().includes(needle)
 **現況**：`/admin` 完全沒有任何驗證。目前只靠 `robots.txt` 與 `useSeoMeta({ robots: 'noindex' })` 擋搜尋引擎（`app/layouts/admin.vue:4`）—— **那只擋爬蟲，不擋人**。任何人知道網址就能改資料、刪行程。
 
 **建議做法：Cloudflare Access**（Zero Trust）。
-理由：不用寫任何驗證程式碼、不用管 session 與密碼雜湊、也不用在 D1 開 users 表。在 Cloudflare Dashboard 對 `wuqiong-travel.*/admin*` 加一條 Access Policy，指定允許的 email（客戶的 `nadia861130@gmail.com` + 開發者自己），Cloudflare 會在請求到 Worker 之前就擋掉。
+理由：不用寫任何驗證程式碼、不用管 session 與密碼雜湊、也不用在 D1 開 users 表。Cloudflare 會在請求到 Worker 之前就擋掉。
+
+### ⚠️ 2026-08-13 更正：這件事需要先買自訂網域
+
+本文件原本寫「在 Cloudflare Dashboard 對 `wuqiong-travel.*/admin*` 加一條 Access Policy」——
+**那個做法在 workers.dev 上行不通**，查證 Cloudflare 官方文件後更正如下。
+
+| 做法 | 可行性 |
+|---|---|
+| workers.dev 一鍵 Access（Workers 儀表板 → Settings → Domains & Routes） | 可以用，但保護的是**整個網址**，文件裡沒有路徑範圍設定 —— 前台客戶會一起被擋在門外，官網不能這樣用 |
+| 建 path-scoped 的 self-hosted Access application（只鎖 `/admin*`） | **需要自訂網域**。官方文件明訂 “Domains must belong to an active zone in your Cloudflare account”，而 `workers.dev` 不是使用者帳號底下的 zone |
+
+**所以正確順序是：先買網域並綁 Custom Domain，才有辦法只鎖後台、讓前台維持公開。**
+
+參考：
+- <https://developers.cloudflare.com/cloudflare-one/applications/configure-apps/self-hosted-public-app/>
+- <https://developers.cloudflare.com/changelog/post/2025-10-03-one-click-access-for-workers/>
+
+> 信心程度：「path-scoped Access 需要自己帳號的 zone」文件寫得很明確。
+> 「一鍵版 workers.dev Access 無法限定路徑」文件沒有明講，是從缺乏相關設定推論的
+> —— 開啟前建議先在儀表板確認有沒有路徑選項。
 
 **執行注意**：
 1. **這一步要在客戶的 Cloudflare 帳號上操作**，不是開發者自己的帳號。
