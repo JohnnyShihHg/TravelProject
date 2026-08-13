@@ -28,10 +28,11 @@ const ogImage = ref<{ id: number, url: string } | null>(null)
 watch(hero, (value) => {
   title.value = value?.title ?? ''
   selected.value = [...(value?.images ?? [])]
-  // API 只回網址（id 不需要外流給前台），這裡從媒體庫反查 id 才能存回去
-  const url = value?.ogImageUrl ?? null
-  const found = url ? (library.value ?? []).find(m => m.url === url) : null
-  ogImage.value = url ? { id: found?.id ?? 0, url } : null
+  // id 直接由 API 給，不從媒體庫反查 —— 反查失敗會得到 id=0，
+  // 存檔時又被當成「沒有指定」而把設定清掉，且不會有任何錯誤訊息
+  ogImage.value = value?.ogImageUrl && value.ogMediaId
+    ? { id: value.ogMediaId, url: value.ogImageUrl }
+    : null
 }, { immediate: true })
 
 const selectedIds = computed(() => new Set(selected.value.map(i => i.id)))

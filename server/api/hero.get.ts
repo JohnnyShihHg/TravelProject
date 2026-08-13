@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     .orderBy(asc(heroImages.sortOrder), asc(heroImages.id))
     .all()
 
-  if (page !== 'home') return { page, title: null, ogImageUrl: null, images }
+  if (page !== 'home') return { page, title: null, ogMediaId: null, ogImageUrl: null, images }
 
   const content = await db.select().from(heroContent).get()
 
@@ -34,6 +34,11 @@ export default defineEventHandler(async (event) => {
   return {
     page,
     title: content?.title ?? null,
+    // 一併回 id：後台要存回去時需要它。以前只回網址、後台再從媒體庫反查 id，
+    // 但反查失敗（清單請求出錯等）會得到 id=0，存檔時 `id || null` 又把它變成 null，
+    // 結果是「按個儲存就把分享圖設定清掉」而且完全不會報錯。id 本來就跟著 images
+    // 一起外流了，不多這一個。
+    ogMediaId: ogImage ? content?.ogMediaId ?? null : null,
     ogImageUrl: ogImage?.url ?? null,
     images
   }

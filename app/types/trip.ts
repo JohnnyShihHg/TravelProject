@@ -247,5 +247,7 @@ export interface HeroContent {
   title: string | null
   /** 首頁手動指定的社群分享圖原始網址（未帶 ?og=）。沒設就是 null，前台會退回第一張 hero 圖 */
   ogImageUrl: string | null
+  /** 同一張圖的 media id，後台存回去時要用（前台不需要） */
+  ogMediaId: number | null
   images: HeroImage[]
 }

@@ -11,7 +11,10 @@ const props = defineProps<{ stages: Stage[] }>()
 const activeId = ref(props.stages[0]?.id ?? '')
 const pillRefs = new Map<string, HTMLElement>()
 
-function setPillRef(id: string, el: Element | null) {
+// Vue 的函式 ref 在 v-for 上會傳進 Element | ComponentPublicInstance | null，
+// 不能只宣告成 Element —— 這裡雖然有 instanceof 擋著、執行期不會出事，
+// 但簽名寫窄了 vue-tsc 會直接報錯（ESLint 抓不到這種）。
+function setPillRef(id: string, el: Element | ComponentPublicInstance | null) {
   if (el instanceof HTMLElement) pillRefs.set(id, el)
   else pillRefs.delete(id)
 }
