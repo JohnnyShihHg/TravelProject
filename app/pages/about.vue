@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { HeroContent } from '~/types/trip'
+import { toOgImageUrl } from '#shared/utils/image-sizes'
 
 const { data: hero } = await useFetch<HeroContent>('/api/hero', {
   key: 'hero-about',
@@ -9,6 +10,8 @@ const { data: hero } = await useFetch<HeroContent>('/api/hero', {
 usePageSeo({
   title: '關於無穹',
   description: '無穹旅行社的品牌故事與帶團理念。我們專注在小團深度旅遊，帶你走進每一段值得記住的旅程。',
+  // 靜態頁沒有「封面」的概念，用自己的第一張 hero 圖當分享圖，裁成 1200×630
+  image: hero.value?.images[0]?.url ? toOgImageUrl(hero.value.images[0]!.url) : undefined,
   path: '/about'
 })
 </script>

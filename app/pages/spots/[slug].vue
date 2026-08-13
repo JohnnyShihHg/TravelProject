@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SpotDetail, Crumb } from '~/types/trip'
+import { toOgImageUrl } from '#shared/utils/image-sizes'
 
 const route = useRoute()
 const slug = route.params.slug as string
@@ -43,7 +44,11 @@ usePageSeo({
     ? `${spot.value.destination.name}${spot.value.name}`
     : spot.value.name,
   description: seoDescription.value,
-  image: spot.value.coverImageUrl ?? spot.value.photos[0]?.url,
+  // 掛 ?og=1 裁成 1200×630，不要讓 FB／LINE 自己亂裁任意比例的照片
+  image: (() => {
+    const url = spot.value.coverImageUrl ?? spot.value.photos[0]?.url
+    return url ? toOgImageUrl(url) : undefined
+  })(),
   path: `/spots/${slug}`
 })
 

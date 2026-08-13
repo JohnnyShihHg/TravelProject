@@ -2,6 +2,7 @@
 import type { HeroContent, HeroImage, MediaLibraryItem } from '~/types/trip'
 import { resizeImageForUpload } from '~/utils/image-upload'
 import { HERO_PAGES, HERO_PAGE_LABELS, type HeroPage } from '#shared/utils/hero-pages'
+import { OG_ASPECT_RATIO, OG_IMAGE_WIDTH } from '#shared/utils/image-sizes'
 
 definePageMeta({ layout: 'admin' })
 useHead({ title: '首頁 Hero' })
@@ -20,6 +21,8 @@ const { data: library, refresh: refreshLibrary } = await useFetch<MediaLibraryIt
 const title = ref('')
 const subtitle = ref('')
 const selected = ref<HeroImage[]>([])
+/** 首頁專用的社群分享圖。null 代表沒指定，前台會自動退回第一張 hero 圖 */
+const ogImage = ref<{ id: number, url: string } | null>(null)
 
 // useFetch 的資料是非同步回來的、切換分頁時還會再換一次，
 // 用 watch 同步表單狀態才不會停在上一頁的內容（舊版直接在 setup 取值，切換後就不同步了）
@@ -27,6 +30,10 @@ watch(hero, (value) => {
   title.value = value?.title ?? ''
   subtitle.value = value?.subtitle ?? ''
   selected.value = [...(value?.images ?? [])]
+  // API 只回網址（id 不需要外流給前台），這裡從媒體庫反查 id 才能存回去
+  const url = value?.ogImageUrl ?? null
+  const found = url ? (library.value ?? []).find(m => m.url === url) : null
+  ogImage.value = url ? { id: found?.id ?? 0, url } : null
 }, { immediate: true })
 
 const selectedIds = computed(() => new Set(selected.value.map(i => i.id)))
@@ -82,6 +89,44 @@ async function onFileSelected(e: Event) {
   }
 }
 
+/**
+ * 分享圖走裁切流程：選檔 → 拉框裁成 1.91:1 → 才進上傳。
+ * 裁切元件是通用的（吃 File 吐 File），其他上傳點要接只需要傳自己的 aspect。
+ */
+const ogFileInput = ref<HTMLInputElement | null>(null)
+const ogPendingFile = ref<File | null>(null)
+const ogUploading = ref(false)
+
+function pickOgFile() {
+  ogFileInput.value?.click()
+}
+
+function onOgFileSelected(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (file) ogPendingFile.value = file
+  if (ogFileInput.value) ogFileInput.value.value = ''
+}
+
+async function onOgCropped(file: File) {
+  ogPendingFile.value = null
+  error.value = ''
+  ogUploading.value = true
+  try {
+    // 裁切輸出已經是 1200×630，遠小於 1600 的上限，resizeImageForUpload 會直接原樣放行；
+    // 還是走一遍是為了跟其他上傳點共用同一條路徑，不要各自長出不同的前處理。
+    const { file: toUpload } = await resizeImageForUpload(file)
+    const form = new FormData()
+    form.append('file', toUpload, (toUpload as File).name ?? file.name)
+    const created = await $fetch<MediaLibraryItem>('/api/admin/media', { method: 'POST', body: form })
+    await refreshLibrary()
+    ogImage.value = { id: created.id, url: created.url }
+  } catch (err) {
+    error.value = (err as { data?: { statusMessage?: string } })?.data?.statusMessage ?? '上傳失敗'
+  } finally {
+    ogUploading.value = false
+  }
+}
+
 async function save() {
   saving.value = true
   saved.value = false
@@ -93,7 +138,8 @@ async function save() {
         page: page.value,
         title: title.value,
         subtitle: subtitle.value,
-        mediaIds: selected.value.map(i => i.id)
+        mediaIds: selected.value.map(i => i.id),
+        ogMediaId: ogImage.value?.id || null
       }
     })
     await refresh()
@@ -145,6 +191,57 @@ watch(page, () => {
         <UFormField label="副標">
           <UInput v-model="subtitle" class="w-full" />
         </UFormField>
+
+        <!--
+          只有首頁需要手動指定分享圖：其他頁面都自動用自己的照片
+          （行程／目的地／景點用封面，其他靜態頁用該頁第一張 hero）。
+        -->
+        <div>
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-sm font-semibold text-gray-900">
+              分享圖（LINE／Facebook）
+            </h2>
+            <div class="flex gap-2">
+              <UButton
+                v-if="ogImage"
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-trash-2"
+                @click="ogImage = null"
+              >
+                改用第一張 hero
+              </UButton>
+              <UButton
+                size="sm"
+                color="primary"
+                variant="soft"
+                icon="i-lucide-crop"
+                :loading="ogUploading"
+                @click="pickOgFile"
+              >
+                {{ ogImage ? '換一張' : '上傳並裁切' }}
+              </UButton>
+            </div>
+          </div>
+          <input
+            ref="ogFileInput"
+            type="file"
+            accept="image/*,.heic,.heif"
+            class="hidden"
+            @change="onOgFileSelected"
+          >
+
+          <div v-if="ogImage" class="mt-3 overflow-hidden rounded-lg border border-gray-200">
+            <img :src="ogImage.url" alt="" class="w-full" style="aspect-ratio: 1200/630; object-fit: cover">
+          </div>
+          <p v-else class="mt-3 rounded-lg border border-dashed border-gray-200 p-6 text-center text-xs text-gray-400">
+            還沒有指定分享圖，目前會自動用首頁第一張 hero 圖裁成 1200×630。
+          </p>
+          <p class="mt-2 text-xs text-gray-400">
+            別人把首頁貼到 LINE 或 Facebook 時顯示的預覽圖，尺寸固定 1200×630。
+          </p>
+        </div>
       </template>
 
       <div>
@@ -219,5 +316,15 @@ watch(page, () => {
         <span v-if="error" class="text-sm text-red-600">{{ error }}</span>
       </div>
     </form>
+
+    <AdminImageCropDialog
+      :file="ogPendingFile"
+      :aspect="OG_ASPECT_RATIO"
+      :output-width="OG_IMAGE_WIDTH"
+      title="裁切分享圖"
+      hint="這一塊會是別人在 LINE／Facebook 看到的預覽圖。"
+      @cropped="onOgCropped"
+      @cancel="ogPendingFile = null"
+    />
   </div>
 </template>

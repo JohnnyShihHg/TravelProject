@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DestinationDetail, Crumb } from '~/types/trip'
+import { toOgImageUrl } from '#shared/utils/image-sizes'
 
 const route = useRoute()
 const slug = route.params.slug as string
@@ -34,7 +35,11 @@ usePageSeo({
     ? `${destination.value.parent.name}${destination.value.name}旅遊行程`
     : `${destination.value.name}旅遊行程`,
   description: seoDescription.value,
-  image: destination.value.coverImageUrl ?? destination.value.trips[0]?.coverImageUrl,
+  // 掛 ?og=1 裁成 1200×630，不要讓 FB／LINE 自己亂裁任意比例的封面照
+  image: (() => {
+    const url = destination.value.coverImageUrl ?? destination.value.trips[0]?.coverImageUrl
+    return url ? toOgImageUrl(url) : undefined
+  })(),
   path: `/destinations/${slug}`
 })
 

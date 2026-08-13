@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TripSummary, HeroContent } from '~/types/trip'
+import { toOgImageUrl } from '#shared/utils/image-sizes'
 
 const { data: hero } = await useFetch<HeroContent>('/api/hero', {
   key: 'hero-contact',
@@ -9,6 +10,8 @@ const { data: hero } = await useFetch<HeroContent>('/api/hero', {
 usePageSeo({
   title: '聯絡我們',
   description: '想詢問行程細節、包團或機票代訂？留下聯絡方式，無穹旅行社會盡快與你聯繫。',
+  // 靜態頁沒有「封面」的概念，用自己的第一張 hero 圖當分享圖，裁成 1200×630
+  image: hero.value?.images[0]?.url ? toOgImageUrl(hero.value.images[0]!.url) : undefined,
   path: '/contact'
 })
 

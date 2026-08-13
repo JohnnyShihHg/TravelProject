@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TripSummary, CalendarBatch, TripTag, Destination, Spot, HeroContent } from '~/types/trip'
+import { toOgImageUrl } from '#shared/utils/image-sizes'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,14 +13,6 @@ const scope = computed(() => (route.query.scope === 'domestic' || route.query.sc
 const tag = computed(() => (typeof route.query.tag === 'string' ? route.query.tag : ''))
 
 const SCOPE_LABEL: Record<string, string> = { domestic: '國內線', overseas: '國外線' }
-
-// canonical 刻意固定指向 /trips（不帶 query）：?tag=、?scope=、?q= 產生的是同一批內容的
-// 不同檢視，讓搜尋引擎知道正本是哪一頁，避免被當成重複內容。
-usePageSeo({
-  title: '探索行程',
-  description: '查看無穹旅行社所有出團行程與出發日期，依目的地、主題或出團月份挑選適合你的旅程。',
-  path: '/trips'
-})
 
 // 六支資料一次發出去並行等，不要一支一支 await。
 //
@@ -52,6 +45,16 @@ const [
     }))
   })
 ])
+
+// canonical 刻意固定指向 /trips（不帶 query）：?tag=、?scope=、?q= 產生的是同一批內容的
+// 不同檢視，讓搜尋引擎知道正本是哪一頁，避免被當成重複內容。
+usePageSeo({
+  title: '探索行程',
+  description: '查看無穹旅行社所有出團行程與出發日期，依目的地、主題或出團月份挑選適合你的旅程。',
+  // 靜態頁沒有「封面」的概念，用自己的第一張 hero 圖當分享圖，裁成 1200×630
+  image: hero.value?.images[0]?.url ? toOgImageUrl(hero.value.images[0]!.url) : undefined,
+  path: '/trips'
+})
 
 // tag 參數同時可能是主題標籤、地點或景點的 slug（見 server/api/trips/index.get.ts），
 // 顯示時要把 slug 換回中文，不然使用者會看到英文網址片段

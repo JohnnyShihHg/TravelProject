@@ -126,6 +126,13 @@ check('hero_content 仍有唯一那一列', one('SELECT COUNT(*) c FROM hero_con
 // 這一項是在確認 backfill 的 JOIN 沒有寫錯而誤搬（例如不小心把所有照片都掛上去）。
 check('picsum 假圖沒有被當成媒體庫圖片搬進來', one('SELECT COUNT(*) c FROM hero_images').c, 0)
 
+console.log('\n首頁分享圖（0007）：')
+check('hero_content.og_media_id 已加上', cols('hero_content').includes('og_media_id'), true)
+// 沒設定分享圖是正常狀態（前台會自動退回第一張 hero 圖），不該有預設值硬指向某張照片
+check('預設為未指定', one('SELECT COUNT(*) c FROM hero_content WHERE og_media_id IS NOT NULL').c, 0)
+// ADD COLUMN 不該動到既有那一列的內容
+check('hero_content 標題沒有被動到', one('SELECT COUNT(*) c FROM hero_content WHERE title IS NULL OR title = \'\'').c, 0)
+
 console.log('\n完整性：')
 check('foreign_key_check 無違規', db.pragma('foreign_key_check').length, 0)
 

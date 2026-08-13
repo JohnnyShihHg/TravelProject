@@ -21,13 +21,21 @@ export default defineEventHandler(async (event) => {
     .orderBy(asc(heroImages.sortOrder), asc(heroImages.id))
     .all()
 
-  if (page !== 'home') return { page, title: null, subtitle: null, images }
+  if (page !== 'home') return { page, title: null, subtitle: null, ogImageUrl: null, images }
 
   const content = await db.select().from(heroContent).get()
+
+  // 首頁手動指定的分享圖。查得到才回傳網址 —— 照片被刪掉時 og_media_id 會被
+  // ON DELETE SET NULL 清成 null，這裡 JOIN 不到就自然回 null，前台會退回第一張 hero。
+  const ogImage = content?.ogMediaId
+    ? await db.select({ url: media.url }).from(media).where(eq(media.id, content.ogMediaId)).get()
+    : null
+
   return {
     page,
     title: content?.title ?? null,
     subtitle: content?.subtitle ?? null,
+    ogImageUrl: ogImage?.url ?? null,
     images
   }
 })

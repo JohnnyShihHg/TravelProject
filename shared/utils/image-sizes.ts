@@ -12,3 +12,22 @@ export type DerivativeWidth = typeof DERIVATIVE_WIDTHS[number]
 export function isDerivativeWidth(value: number): value is DerivativeWidth {
   return (DERIVATIVE_WIDTHS as readonly number[]).includes(value)
 }
+
+/**
+ * 社群分享卡（og:image）的尺寸。1200×630 是 Facebook 建議值，比例 1.91:1，
+ * LINE、Twitter/X、LinkedIn 也都吃這個比例。
+ *
+ * 為什麼一定要裁：平台拿到不是 1.91:1 的圖會自己裁，裁哪一塊不可控 ——
+ * 直式照片最慘，常常只剩中間一條。與其讓平台亂裁，不如我們先裁好。
+ *
+ * 後台手動指定的分享圖是在瀏覽器裡拉框裁好才上傳的（ImageCropDialog），
+ * 這個尺寸是給「沒有手動指定、自動拿該頁現有照片」的情況用的。
+ */
+export const OG_IMAGE_WIDTH = 1200
+export const OG_IMAGE_HEIGHT = 630
+export const OG_ASPECT_RATIO = OG_IMAGE_WIDTH / OG_IMAGE_HEIGHT
+
+/** 加在媒體網址後面，讓伺服器輸出裁成 1200×630 的版本 */
+export function toOgImageUrl(url: string): string {
+  return `${url}${url.includes('?') ? '&' : '?'}og=1`
+}

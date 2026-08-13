@@ -8,6 +8,8 @@ interface UpdateHeroBody {
   title?: string
   subtitle?: string
   mediaIds?: unknown
+  /** 首頁專用的社群分享圖；null 代表清掉，改成自動用第一張 hero 圖 */
+  ogMediaId?: unknown
 }
 
 const MAX = { title: 200, subtitle: 300, images: 8 } as const
@@ -49,12 +51,21 @@ export default defineEventHandler(async (event) => {
     if (title.length > MAX.title) throw createError({ statusCode: 400, statusMessage: `標題請控制在 ${MAX.title} 字以內` })
     if (subtitle.length > MAX.subtitle) throw createError({ statusCode: 400, statusMessage: `副標題請控制在 ${MAX.subtitle} 字以內` })
 
+    // 分享圖跟 hero 圖不同，不必是媒體庫裡「已掛在這一頁」的照片，但一定要真的存在，
+    // 否則會存下一個 JOIN 不到的孤兒 id
+    const rawOgId = Number(body.ogMediaId)
+    const ogMediaId = Number.isInteger(rawOgId) && rawOgId > 0 ? rawOgId : null
+    if (ogMediaId) {
+      const exists = await db.select({ id: media.id }).from(media).where(eq(media.id, ogMediaId)).get()
+      if (!exists) throw createError({ statusCode: 400, statusMessage: '分享圖已不存在，請重新上傳' })
+    }
+
     const existing = await db.select().from(heroContent).get()
     if (!existing) {
-      await db.insert(heroContent).values({ title, subtitle }).run()
+      await db.insert(heroContent).values({ title, subtitle, ogMediaId }).run()
     } else {
       await db.update(heroContent)
-        .set({ title, subtitle, updatedAt: new Date().toISOString() })
+        .set({ title, subtitle, ogMediaId, updatedAt: new Date().toISOString() })
         .where(eq(heroContent.id, existing.id))
         .run()
     }

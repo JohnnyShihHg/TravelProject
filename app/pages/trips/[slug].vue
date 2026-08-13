@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TripDetail } from '~/types/trip'
+import { toOgImageUrl } from '#shared/utils/image-sizes'
 
 const route = useRoute()
 const slug = route.params.slug as string
@@ -14,7 +15,9 @@ if (error.value || !trip.value) {
 usePageSeo({
   title: trip.value.seoTitle || trip.value.title,
   description: trip.value.seoDescription || trip.value.summary,
-  image: trip.value.coverImageUrl,
+  // 封面照是任意比例，直接丟給 FB／LINE 會被它們自己裁（直式照片常常只剩中間一條）。
+  // 掛 ?og=1 讓伺服器先裁成 1200×630，裁哪一塊由我們決定。
+  image: trip.value.coverImageUrl ? toOgImageUrl(trip.value.coverImageUrl) : undefined,
   path: `/trips/${slug}`,
   type: 'article'
 })

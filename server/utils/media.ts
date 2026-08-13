@@ -2,7 +2,7 @@ import type { H3Event } from 'h3'
 import { mkdirSync, writeFileSync, readFileSync, existsSync, unlinkSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import type { R2Bucket, ImagesBinding } from '@cloudflare/workers-types'
-import { DERIVATIVE_WIDTHS, type DerivativeWidth } from '#shared/utils/image-sizes'
+import { DERIVATIVE_WIDTHS, OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, type DerivativeWidth } from '#shared/utils/image-sizes'
 
 interface CloudflareMediaEnv {
   bucket: R2Bucket
@@ -121,6 +121,11 @@ export function derivedKey(key: string, width: number) {
   return `derived/${width}/${key}`
 }
 
+/** OG 裁切版跟寬度衍生圖分開放，刪除時一樣可以直接推導出來 */
+export function ogDerivedKey(key: string) {
+  return `derived/og/${key}`
+}
+
 /**
  * 取得指定寬度的縮圖，沒有就當場轉一張並寫回 R2。
  *
@@ -168,6 +173,47 @@ export async function getOrCreateDerivative(
   }
 }
 
+/**
+ * 取得裁成 1200×630 的社群分享圖，沒有就當場裁一張並寫回 R2。
+ *
+ * 快取與失敗處理的理由跟 getOrCreateDerivative 完全相同（懶生成、寫回 R2、
+ * 失敗回 null 由呼叫端退回原圖），差別只有 transform 的參數：
+ *
+ * 這裡用 fit: 'cover' 而不是 scale-down —— 分享卡需要的是「剛好 1.91:1」，
+ * 不是「不超過某個尺寸」。cover 會填滿整個框並裁掉超出的部分，輸出必定是 1200×630。
+ * scale-down 會保持原比例，等於沒解決問題。
+ */
+export async function getOrCreateOgDerivative(
+  cf: CloudflareMediaEnv,
+  key: string
+): Promise<ArrayBuffer | null> {
+  const cacheKey = ogDerivedKey(key)
+
+  const cached = await cf.bucket.get(cacheKey)
+  if (cached) return cached.arrayBuffer()
+
+  const original = await cf.bucket.get(key)
+  if (!original) return null
+
+  try {
+    const inputStream = original.body as unknown as Parameters<ImagesBinding['input']>[0]
+    const processed = (
+      await cf.images.input(inputStream)
+        .transform({ width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT, fit: 'cover' })
+        .output({ format: 'image/webp', quality: 80 })
+    ).response()
+
+    const bytes = await processed.arrayBuffer()
+    await cf.bucket.put(cacheKey, bytes, {
+      httpMetadata: { contentType: 'image/webp' }
+    })
+    return bytes
+  } catch (err) {
+    console.warn(`[media] 產生 OG 分享圖失敗，改送原圖 ${key}:`, err)
+    return null
+  }
+}
+
 const EXT_CONTENT_TYPE: Record<string, string> = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
@@ -184,8 +230,13 @@ export async function deleteStoredImage(event: H3Event, key: string): Promise<vo
   const cf = getCloudflareMediaEnv(event)
   try {
     if (cf) {
-      // 衍生尺寸的 key 可以直接推導，不需要 list()；漏刪會留下永遠不會再被讀到的孤兒檔案
-      await cf.bucket.delete([key, ...DERIVATIVE_WIDTHS.map(w => derivedKey(key, w))])
+      // 衍生尺寸的 key 可以直接推導，不需要 list()；漏刪會留下永遠不會再被讀到的孤兒檔案。
+      // OG 裁切版也要一起刪 —— 它跟寬度衍生圖放在不同前綴，漏掉不會有任何錯誤訊息。
+      await cf.bucket.delete([
+        key,
+        ...DERIVATIVE_WIDTHS.map(w => derivedKey(key, w)),
+        ogDerivedKey(key)
+      ])
       return
     }
     const localPath = join(LOCAL_UPLOAD_DIR, key)

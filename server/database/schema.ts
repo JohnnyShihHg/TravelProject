@@ -162,6 +162,9 @@ export const heroContent = sqliteTable('hero_content', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
   subtitle: text('subtitle').notNull(),
+  // 首頁分享到 LINE／FB 時的 og:image。只有首頁需要手動指定 —— 其他頁面都自動用
+  // 自己的照片（內容頁用封面、靜態頁用該頁第一張 hero）。沒設就退回第一張 hero 圖。
+  ogMediaId: integer('og_media_id').references(() => media.id, { onDelete: 'set null' }),
   updatedAt: text('updated_at').notNull().default(sql`(current_timestamp)`)
 })
 
