@@ -61,18 +61,36 @@ async function toggle(value: HeroChoice, index: number) {
       :alt="`${hero?.title ?? '無穹旅行社'}主視覺`"
       dots-class="top-20 bottom-auto lg:bottom-24 lg:top-auto"
     />
-    <div class="absolute inset-0 bg-gray-900/35" />
-    <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-transparent to-gray-900/40" />
+    <!--
+      兩層遮罩的分工：平均層負責整體壓暗，漸層層只負責保護上下兩端的白字。
+      平均層刻意壓得很淡（/10）—— 它會連照片中間最好看的部分一起壓暗，而那裡沒有
+      任何文字需要保護。之前是 /35，疊上漸層後中間實際暗 35%、上方 61%、下方 80%，
+      照片整體灰掉。現在中間只剩約 10%。
+      上端留一點是給導覽列的白色連結，下端留較多是給玻璃入口列（bg-white/10）——
+      它底下太亮的話會整條看不出來。
+    -->
+    <div class="absolute inset-0 bg-gray-900/10" />
+    <div class="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-gray-900/30" />
 
-    <!-- pt-16 讓標題避開疊在上方的固定導覽列，視覺上才是置中的 -->
+    <!-- pt-16 讓文字避開疊在上方的固定導覽列，視覺上才是置中的 -->
     <div class="relative z-10 flex flex-1 items-center justify-center px-4 pb-12 pt-16">
       <div class="text-center">
-        <h1 class="text-5xl font-semibold tracking-tight text-white sm:text-7xl lg:text-8xl">
-          {{ hero?.title ?? '無穹旅行社' }}
+        <!--
+          畫面上只有這一行字（0008 把後台的標題＋副標合併成一欄）。
+          它同時是 h1：首頁沒有 h1 會少掉最重要的標題訊號，標題階層斷掉對無障礙也是退步。
+          字級固定 16px，不隨斷點放大 —— 這裡要的是安靜的一行字，讓照片自己說話。
+
+          遮罩調淡之後，白字壓在明亮的照片上（例如天空、白色建築）會糊掉。
+          解法刻意用多層 text-shadow 而不是把整張照片壓回暗的：陰影只作用在字的周圍，
+          照片其他地方維持乾淨。第一層近距離高不透明度負責描邊，第二層大範圍負責
+          把背景整體壓下去，兩層疊起來在亮底和暗底都讀得到。
+        -->
+        <h1
+          class="mx-auto max-w-md text-base font-normal text-white
+            [text-shadow:0_1px_3px_rgba(0,0,0,.9),0_2px_16px_rgba(0,0,0,.7)]"
+        >
+          {{ hero?.title ?? '探索你的下一趟旅程' }}
         </h1>
-        <p class="mx-auto mt-5 max-w-md text-sm text-white/85 sm:text-base">
-          {{ hero?.subtitle ?? '探索你的下一趟旅程' }}
-        </p>
       </div>
     </div>
 

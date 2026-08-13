@@ -240,11 +240,11 @@ export interface HeroImage {
   url: string
 }
 
-/** /api/hero?page= 的回傳。title/subtitle/ogImageUrl 只有首頁有，其他三頁只管圖片 */
+/** /api/hero?page= 的回傳。title/ogImageUrl 只有首頁有，其他三頁只管圖片 */
 export interface HeroContent {
   page: string
+  /** hero 上唯一那一行字（0008 把原本的標題＋副標合併成一欄） */
   title: string | null
-  subtitle: string | null
   /** 首頁手動指定的社群分享圖原始網址（未帶 ?og=）。沒設就是 null，前台會退回第一張 hero 圖 */
   ogImageUrl: string | null
   images: HeroImage[]

@@ -157,11 +157,11 @@ export const contentSnippets = sqliteTable('content_snippets', {
   createdAt: text('created_at').notNull().default(sql`(current_timestamp)`)
 })
 
-// 只服務首頁的標題／副標；圖片一律走 heroImages（其他三頁沒有可編輯的文案，所以只有圖片）
+// 只服務首頁的那一行標題；圖片一律走 heroImages（其他三頁沒有可編輯的文案，所以只有圖片）。
+// 0008 把原本的標題＋副標合併成一欄 —— hero 畫面上只顯示一行字，資料就只該有一行。
 export const heroContent = sqliteTable('hero_content', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
-  subtitle: text('subtitle').notNull(),
   // 首頁分享到 LINE／FB 時的 og:image。只有首頁需要手動指定 —— 其他頁面都自動用
   // 自己的照片（內容頁用封面、靜態頁用該頁第一張 hero）。沒設就退回第一張 hero 圖。
   ogMediaId: integer('og_media_id').references(() => media.id, { onDelete: 'set null' }),

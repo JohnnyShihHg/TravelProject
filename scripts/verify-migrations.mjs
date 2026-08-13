@@ -133,6 +133,15 @@ check('預設為未指定', one('SELECT COUNT(*) c FROM hero_content WHERE og_me
 // ADD COLUMN 不該動到既有那一列的內容
 check('hero_content 標題沒有被動到', one('SELECT COUNT(*) c FROM hero_content WHERE title IS NULL OR title = \'\'').c, 0)
 
+console.log('\nHero 單一標題（0008：標題＋副標 → 一欄）：')
+check('hero_content.subtitle 已移除', cols('hero_content').includes('subtitle'), false)
+// 保留下來的必須是原本副標的內容 —— 那是現在畫面上唯一顯示的字。
+// 搬錯方向的話首頁會變成顯示「無穹旅行社」，而且是不會報錯的那種錯。
+check('副標內容已搬進 title', one('SELECT title FROM hero_content').title, '帶你走進每一段值得記住的旅程')
+// DROP COLUMN 不該把 singleton 那一列或 0007 剛加的欄位弄丟
+check('hero_content 仍有唯一那一列（0008 後）', one('SELECT COUNT(*) c FROM hero_content').c, 1)
+check('og_media_id 在 DROP COLUMN 後還在', cols('hero_content').includes('og_media_id'), true)
+
 console.log('\n完整性：')
 check('foreign_key_check 無違規', db.pragma('foreign_key_check').length, 0)
 

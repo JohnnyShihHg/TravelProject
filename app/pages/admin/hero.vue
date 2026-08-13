@@ -19,7 +19,6 @@ const { data: hero, refresh } = await useFetch<HeroContent>('/api/hero', {
 const { data: library, refresh: refreshLibrary } = await useFetch<MediaLibraryItem[]>('/api/admin/media')
 
 const title = ref('')
-const subtitle = ref('')
 const selected = ref<HeroImage[]>([])
 /** 首頁專用的社群分享圖。null 代表沒指定，前台會自動退回第一張 hero 圖 */
 const ogImage = ref<{ id: number, url: string } | null>(null)
@@ -28,7 +27,6 @@ const ogImage = ref<{ id: number, url: string } | null>(null)
 // 用 watch 同步表單狀態才不會停在上一頁的內容（舊版直接在 setup 取值，切換後就不同步了）
 watch(hero, (value) => {
   title.value = value?.title ?? ''
-  subtitle.value = value?.subtitle ?? ''
   selected.value = [...(value?.images ?? [])]
   // API 只回網址（id 不需要外流給前台），這裡從媒體庫反查 id 才能存回去
   const url = value?.ogImageUrl ?? null
@@ -137,7 +135,6 @@ async function save() {
       body: {
         page: page.value,
         title: title.value,
-        subtitle: subtitle.value,
         mediaIds: selected.value.map(i => i.id),
         ogMediaId: ogImage.value?.id || null
       }
@@ -185,11 +182,8 @@ watch(page, () => {
 
     <form class="mt-4 space-y-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6" @submit.prevent="save">
       <template v-if="page === 'home'">
-        <UFormField label="標題">
+        <UFormField label="標題" help="顯示在首頁大圖中央的那一行字">
           <UInput v-model="title" class="w-full" />
-        </UFormField>
-        <UFormField label="副標">
-          <UInput v-model="subtitle" class="w-full" />
         </UFormField>
 
         <!--

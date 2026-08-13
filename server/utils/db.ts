@@ -376,7 +376,7 @@ export function ensureSchema() {
     CREATE TABLE IF NOT EXISTS hero_content (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
-      subtitle TEXT NOT NULL,
+      og_media_id INTEGER REFERENCES media(id) ON DELETE SET NULL,
       updated_at TEXT NOT NULL DEFAULT (current_timestamp)
     );
 

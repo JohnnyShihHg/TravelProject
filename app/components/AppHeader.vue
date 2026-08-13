@@ -27,20 +27,28 @@ onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
 </script>
 
 <template>
+  <!--
+    沒捲動時（疊在 hero 照片上）整條完全透明：原本的 bg-white/10 + backdrop-blur-xl
+    會在照片最上緣糊出一條灰帶，是 hero 看起來「灰灰暗暗」的原因之一。
+    毛玻璃只在捲動後才啟用 —— 那時它底下是白色內容，需要它才讀得到。
+    透明之後白色連結少了底色襯托，改用 drop-shadow 保對比（見下方各元素）。
+  -->
   <header
-    class="fixed inset-x-0 top-0 z-50 border-b backdrop-blur-xl transition-colors duration-300"
-    :class="scrolled ? 'border-gray-200/60 bg-white/75' : 'border-white/15 bg-white/10'"
+    class="fixed inset-x-0 top-0 z-50 border-b transition-colors duration-300"
+    :class="scrolled
+      ? 'border-gray-200/60 bg-white/75 backdrop-blur-xl'
+      : 'border-transparent bg-transparent'"
   >
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
       <NuxtLink to="/" class="flex items-center gap-2">
         <UIcon
           name="i-lucide-compass"
           class="size-7 transition-colors"
-          :class="scrolled ? 'text-primary' : 'text-white'"
+          :class="scrolled ? 'text-primary' : 'text-white drop-shadow-md'"
         />
         <span
           class="text-lg font-bold tracking-tight transition-colors"
-          :class="scrolled ? 'text-gray-900' : 'text-white'"
+          :class="scrolled ? 'text-gray-900' : 'text-white drop-shadow-md'"
         >無穹旅行社</span>
       </NuxtLink>
 
@@ -50,7 +58,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
           :key="link.label"
           :to="link.to"
           class="text-sm font-medium transition-colors"
-          :class="scrolled ? 'text-gray-600 hover:text-primary' : 'text-white/85 hover:text-white'"
+          :class="scrolled ? 'text-gray-600 hover:text-primary' : 'text-white drop-shadow-md hover:text-white'"
         >
           {{ link.label }}
         </NuxtLink>
@@ -61,7 +69,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
         color="neutral"
         variant="ghost"
         class="md:hidden"
-        :class="scrolled ? '' : 'text-white hover:bg-white/15'"
+        :class="scrolled ? '' : 'text-white drop-shadow-md hover:bg-white/15'"
         aria-label="開啟選單"
         @click="mobileOpen = !mobileOpen"
       />

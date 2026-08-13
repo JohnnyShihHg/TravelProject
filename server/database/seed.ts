@@ -410,9 +410,10 @@ export async function seed() {
     { name: '林先生', phone: '0922-111-222', email: null, interestedTripId: null, message: '想詢問是否有規劃沖繩親子行程，預計明年暑假出發。' }
   ]).run()
 
+  // hero 只有一行字（0008 把標題＋副標合併）。品牌名不放這裡 —— 它已經在導覽列
+  // logo 與瀏覽器分頁標題上，hero 再講一次只是重複。
   await db.insert(heroContent).values({
-    title: '無穹旅行社',
-    subtitle: '帶你走進每一段值得記住的旅程'
+    title: '帶你走進每一段值得記住的旅程'
   }).run()
 
   // hero 的圖來自媒體庫（後台可上傳、可排序）。這裡挑幾張已 seed 的照片掛上去，

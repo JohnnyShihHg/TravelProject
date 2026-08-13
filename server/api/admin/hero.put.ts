@@ -6,13 +6,12 @@ import { HERO_PAGES, isHeroPage } from '#shared/utils/hero-pages'
 interface UpdateHeroBody {
   page?: string
   title?: string
-  subtitle?: string
   mediaIds?: unknown
   /** 首頁專用的社群分享圖；null 代表清掉，改成自動用第一張 hero 圖 */
   ogMediaId?: unknown
 }
 
-const MAX = { title: 200, subtitle: 300, images: 8 } as const
+const MAX = { title: 200, images: 8 } as const
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<UpdateHeroBody>(event)
@@ -45,11 +44,9 @@ export default defineEventHandler(async (event) => {
 
   if (page === 'home') {
     const title = typeof body.title === 'string' ? body.title.trim() : ''
-    const subtitle = typeof body.subtitle === 'string' ? body.subtitle.trim() : ''
 
     if (!title) throw createError({ statusCode: 400, statusMessage: '請填寫標題' })
     if (title.length > MAX.title) throw createError({ statusCode: 400, statusMessage: `標題請控制在 ${MAX.title} 字以內` })
-    if (subtitle.length > MAX.subtitle) throw createError({ statusCode: 400, statusMessage: `副標題請控制在 ${MAX.subtitle} 字以內` })
 
     // 分享圖跟 hero 圖不同，不必是媒體庫裡「已掛在這一頁」的照片，但一定要真的存在，
     // 否則會存下一個 JOIN 不到的孤兒 id
@@ -62,10 +59,10 @@ export default defineEventHandler(async (event) => {
 
     const existing = await db.select().from(heroContent).get()
     if (!existing) {
-      await db.insert(heroContent).values({ title, subtitle, ogMediaId }).run()
+      await db.insert(heroContent).values({ title, ogMediaId }).run()
     } else {
       await db.update(heroContent)
-        .set({ title, subtitle, ogMediaId, updatedAt: new Date().toISOString() })
+        .set({ title, ogMediaId, updatedAt: new Date().toISOString() })
         .where(eq(heroContent.id, existing.id))
         .run()
     }
