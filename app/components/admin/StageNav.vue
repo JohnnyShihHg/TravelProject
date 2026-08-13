@@ -9,6 +9,19 @@ export interface Stage {
 const props = defineProps<{ stages: Stage[] }>()
 
 const activeId = ref(props.stages[0]?.id ?? '')
+const pillRefs = new Map<string, HTMLElement>()
+
+function setPillRef(id: string, el: Element | null) {
+  if (el instanceof HTMLElement) pillRefs.set(id, el)
+  else pillRefs.delete(id)
+}
+
+// 讓高亮的膠囊在橫向清單裡永遠停在同一個水平位置，兩側的其他階段隨捲動被推入/推出。
+function centerActivePill(id: string) {
+  pillRefs.get(id)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+}
+
+watch(activeId, id => centerActivePill(id))
 
 // 目前階段直接從各區塊的實際位置算出來，不用 IntersectionObserver。
 //
@@ -75,6 +88,7 @@ const doneCount = computed(() => props.stages.filter(s => s.done).length)
       <button
         v-for="(stage, i) in stages"
         :key="stage.id"
+        :ref="el => setPillRef(stage.id, el)"
         type="button"
         class="group flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors"
         :class="activeId === stage.id

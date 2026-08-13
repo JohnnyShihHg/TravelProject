@@ -3,7 +3,7 @@ import { TRIP_BADGES } from '~/types/trip'
 import type { TripDetail, TripTag, TripBatch } from '~/types/trip'
 import type { Stage } from '~/components/admin/StageNav.vue'
 
-definePageMeta({ layout: 'admin' })
+definePageMeta({ layout: 'admin', heavyLoading: true })
 
 const route = useRoute()
 const router = useRouter()
@@ -199,12 +199,19 @@ const stages = computed<Stage[]>(() => [
         <span class="font-medium text-gray-900">{{ trip.title }}</span>
       </div>
 
-      <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
-        <!-- 中間：階段列 + 內容 -->
-        <div class="min-w-0">
-          <AdminStageNav :stages="stages" />
+      <!--
+        階段列拉到兩欄 grid 外面：sticky 的「黏住範圍」只受它自己的 DOM 父層高度限制。
+        手機版欄位變成單欄堆疊，右側儲存卡會接在中間欄位下面；階段列原本包在中間欄位
+        裡，父層高度在中間欄位結束時就結束，捲到儲存卡那段時階段列會提早脫離 sticky、
+        消失在畫面上方。移到 grid 外層（父層涵蓋中間欄位＋儲存卡的完整高度）之後，
+        階段列會一路黏到頁面真正的最底部。
+      -->
+      <AdminStageNav :stages="stages" class="mt-6" />
 
-          <div class="mt-6 space-y-6">
+      <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+        <!-- 中間：內容 -->
+        <div class="min-w-0">
+          <div class="space-y-6">
             <section id="stage-basic" class="scroll-mt-28 space-y-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
               <h2 class="text-lg font-semibold text-gray-900">
                 ① 基本資料

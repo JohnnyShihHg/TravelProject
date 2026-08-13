@@ -115,53 +115,73 @@ function canLoop(count: number) {
       </UButton>
     </div>
 
-    <!-- 主題模式：主題小卡，點了帶著該主題進行程頁 -->
-    <UCarousel
-      v-else-if="choice === 'theme' && themeCards.length"
-      v-slot="{ item }"
-      :items="themeCards"
-      :arrows="showArrows"
-      dots
-      :loop="canLoop(themeCards.length)"
-      align="start"
-      class="mb-10"
-      :ui="carouselUi"
-    >
-      <NuxtLink
-        :to="{ path: '/trips', query: { tag: item.slug } }"
-        class="group flex h-full flex-col justify-between rounded-xl border border-gray-100 p-6 shadow-sm transition hover:border-primary/40 hover:shadow-md"
+    <!--
+      choice 切換時卡片整組換掉（key 帶 choice），淡入淡出讓「舊卡片消失→留白→新卡片
+      出現」的過程不要那麼硬。mode="out-in" 確保舊的先淡出、留白，新的才淡入，避免兩組
+      卡片重疊在同一個位置。
+    -->
+    <Transition v-else name="hero-fade" mode="out-in">
+      <!-- 主題模式：主題小卡，點了帶著該主題進行程頁 -->
+      <UCarousel
+        v-if="choice === 'theme' && themeCards.length"
+        :key="`theme-${choice}`"
+        v-slot="{ item }"
+        :items="themeCards"
+        :arrows="showArrows"
+        dots
+        :loop="canLoop(themeCards.length)"
+        align="start"
+        class="mb-10"
+        :ui="carouselUi"
       >
-        <UIcon name="i-lucide-compass" class="size-6 text-primary" />
-        <div class="mt-6">
-          <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary">
-            {{ item.name }}
-          </h3>
-          <p class="mt-1 text-xs text-gray-500">
-            {{ item.count }} 個行程
-          </p>
-        </div>
-      </NuxtLink>
-    </UCarousel>
+        <NuxtLink
+          :to="{ path: '/trips', query: { tag: item.slug } }"
+          class="group flex h-full flex-col justify-between rounded-xl border border-gray-100 p-6 shadow-sm transition hover:border-primary/40 hover:shadow-md"
+        >
+          <UIcon name="i-lucide-compass" class="size-6 text-primary" />
+          <div class="mt-6">
+            <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary">
+              {{ item.name }}
+            </h3>
+            <p class="mt-1 text-xs text-gray-500">
+              {{ item.count }} 個行程
+            </p>
+          </div>
+        </NuxtLink>
+      </UCarousel>
 
-    <!-- 國內／國外線：行程小卡 -->
-    <UCarousel
-      v-else-if="tripCards.length"
-      v-slot="{ item }"
-      :items="tripCards"
-      :arrows="showArrows"
-      dots
-      :loop="canLoop(tripCards.length)"
-      align="start"
-      class="mb-10"
-      :ui="carouselUi"
-    >
-      <TripCard :trip="item" />
-    </UCarousel>
+      <!-- 國內／國外線：行程小卡 -->
+      <UCarousel
+        v-else-if="tripCards.length"
+        :key="`trips-${choice}`"
+        v-slot="{ item }"
+        :items="tripCards"
+        :arrows="showArrows"
+        dots
+        :loop="canLoop(tripCards.length)"
+        align="start"
+        class="mb-10"
+        :ui="carouselUi"
+      >
+        <TripCard :trip="item" />
+      </UCarousel>
 
-    <!-- 資料還在路上時先留白，避免閃一下「沒有行程」 -->
-    <div v-else-if="pending" class="h-64" />
-    <p v-else class="text-sm text-gray-500">
-      這個分類目前還沒有行程
-    </p>
+      <!-- 資料還在路上時先留白，避免閃一下「沒有行程」 -->
+      <div v-else-if="pending" :key="`pending-${choice}`" class="h-64" />
+      <p v-else :key="`empty-${choice}`" class="text-sm text-gray-500">
+        這個分類目前還沒有行程
+      </p>
+    </Transition>
   </section>
 </template>
+
+<style scoped>
+.hero-fade-enter-active,
+.hero-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.hero-fade-enter-from,
+.hero-fade-leave-to {
+  opacity: 0;
+}
+</style>
