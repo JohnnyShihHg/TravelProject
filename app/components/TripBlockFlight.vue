@@ -14,7 +14,7 @@ defineProps<{ data: FlightBlockData }>()
       航班時間僅為參考，最終確定之使用航班以說明會資料為準
     </p>
 
-    <div class="rounded-xl border border-gray-100 p-5 shadow-sm">
+    <div class="rounded-xl border border-gray-100 p-5 shadow-sm print:shadow-none">
       <div class="space-y-3">
         <div v-for="(leg, i) in data.legs" :key="i" class="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg bg-gray-50 p-3 text-base">
           <UBadge :color="leg.label === '去程' ? 'primary' : 'neutral'" variant="subtle">

@@ -187,7 +187,7 @@ onBeforeUnmount(() => observer?.disconnect())
         </p>
 
         <div v-if="sortedBatches.length" class="space-y-3">
-          <div v-for="batch in visibleBatches" :key="batch.id" class="flex flex-col gap-3 rounded-xl border border-gray-100 p-4 shadow-sm sm:flex-row sm:items-start sm:justify-between">
+          <div v-for="batch in visibleBatches" :key="batch.id" class="flex flex-col gap-3 rounded-xl border border-gray-100 p-4 shadow-sm print:shadow-none sm:flex-row sm:items-start sm:justify-between">
             <p class="text-base font-semibold text-gray-900">
               {{ batch.departureDate }} ～ {{ batch.returnDate }}
             </p>

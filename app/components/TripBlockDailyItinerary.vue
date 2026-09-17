@@ -29,7 +29,7 @@ const rows = computed(() => {
 
     <div class="space-y-4">
       <template v-for="row in rows" :key="row.key">
-        <div v-if="row.kind === 'day'" class="rounded-xl border border-gray-100 p-4 shadow-sm print:break-inside-avoid">
+        <div v-if="row.kind === 'day'" class="rounded-xl border border-gray-100 p-4 shadow-sm print:break-inside-avoid print:shadow-none">
           <div class="flex items-start gap-3">
             <span class="shrink-0 rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-white">
               DAY {{ row.day.day }}
