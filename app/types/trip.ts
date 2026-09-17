@@ -186,6 +186,7 @@ export interface FlightBlockData {
 }
 
 export interface DailyItineraryDay {
+  kind: 'day'
   day: number
   title: string
   html: string
@@ -193,8 +194,23 @@ export interface DailyItineraryDay {
   hotel: string
 }
 
+/** 插在天數之間的景點小卡。caption/imageMediaId 沒填就用 spot 自己的介紹／封面圖當預設值 */
+export interface SpotCardItem {
+  kind: 'spotCard'
+  id: string
+  spotId: number
+  caption?: string
+  imageMediaId?: number
+  /** 以下只在後端組出 TripDetail 回應時才會補上，不是儲存進 D1 的欄位 */
+  spot?: { slug: string, name: string, description: string | null, coverImageUrl: string | null }
+  /** imageMediaId 覆寫後解析出來的實際網址；沒有覆寫就是 undefined，前台退回 spot.coverImageUrl */
+  imageUrl?: string
+}
+
+export type DailyItineraryItem = DailyItineraryDay | SpotCardItem
+
 export interface DailyItineraryBlockData {
-  days: DailyItineraryDay[]
+  items: DailyItineraryItem[]
 }
 
 export type BlockData = RichTextBlockData | FlightBlockData | DailyItineraryBlockData

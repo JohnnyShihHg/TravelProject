@@ -34,8 +34,10 @@ function preview(block: ContentBlock) {
     return `${legs.length} 段航班`
   }
   if (block.type === 'daily_itinerary') {
-    const days = (block.data as { days: unknown[] }).days
-    return `${days.length} 天行程`
+    const items = (block.data as { items: { kind: string }[] }).items
+    const dayCount = items.filter(i => i.kind === 'day').length
+    const spotCardCount = items.length - dayCount
+    return spotCardCount ? `${dayCount} 天行程・${spotCardCount} 張景點小卡` : `${dayCount} 天行程`
   }
   return ''
 }

@@ -75,6 +75,26 @@ export function sanitizeBlockData(data: unknown): unknown {
     return { ...value, html: sanitizeRichText(value.html) }
   }
 
+  if (Array.isArray(value.items)) {
+    return {
+      ...value,
+      items: value.items.map((raw) => {
+        if (!raw || typeof raw !== 'object') return raw
+        const item = raw as Record<string, unknown>
+        if (typeof item.html === 'string') return { ...item, html: sanitizeRichText(item.html) }
+        if (item.kind === 'spotCard') {
+          // spot／imageUrl 是後端組 TripDetail 回應時才補上的欄位（見 enrichDailyItineraryBlocks），
+          // 後台編輯器會把整包 draft 存回來，這裡要濾掉，不然這份過期快照會被寫進 D1。
+          const { spot: _spot, imageUrl: _imageUrl, ...rest } = item
+          return rest
+        }
+        return item
+      })
+    }
+  }
+
+  // 舊格式 { days: [...] } 讀取時仍會被 parseBlockData 轉成 items 並用 v-html 渲染，
+  // 所以直接打 API 送舊格式進來也一樣要清洗
   if (Array.isArray(value.days)) {
     return {
       ...value,

@@ -2,7 +2,7 @@ import { eq, asc, inArray } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import type { DB } from './db'
 import { trips, batches, tags, tripTags, destinations, tripDestinations, spots, tripSpots, media, tripImages, contentBlocks, contentSnippets } from '../database/schema'
-import { parseBlockData } from './content-blocks'
+import { parseBlockData, type DailyItineraryBlockData } from './content-blocks'
 
 export async function getTripTags(db: DB, tripId: number) {
   return db
@@ -110,11 +110,73 @@ export async function getTripBlocks(db: DB, tripId: number) {
     : []
   const snippetById = new Map(snippets.map(s => [s.id, s]))
 
-  return rows.map((row) => {
+  const parsed = rows.map((row) => {
     const snippet = row.snippetId !== null ? snippetById.get(row.snippetId) : undefined
     // 範本被刪掉的話 snippetId 會被 ON DELETE SET NULL 清成 null，這裡的 snippet 是
     // undefined 只可能發生在還沒被清掉、查詢時間差的情況，一樣安全地回退用自己存的那份
     return { ...row, data: parseBlockData(snippet ? snippet.data : row.data) }
+  })
+
+  return enrichDailyItineraryBlocks(db, parsed)
+}
+
+async function getSpotsByIds(db: DB, spotIds: number[]) {
+  if (spotIds.length === 0) return new Map<number, { slug: string, name: string, description: string | null, coverImageUrl: string | null }>()
+  const rows = await db
+    .select({
+      id: spots.id,
+      slug: spots.slug,
+      name: spots.name,
+      description: spots.description,
+      coverImageUrl: media.url
+    })
+    .from(spots)
+    .leftJoin(media, eq(spots.coverMediaId, media.id))
+    .where(inArray(spots.id, spotIds))
+    .all()
+  return new Map(rows.map(({ id, ...rest }) => [id, rest]))
+}
+
+async function getMediaUrlsByIds(db: DB, mediaIds: number[]) {
+  if (mediaIds.length === 0) return new Map<number, string>()
+  const rows = await db.select({ id: media.id, url: media.url }).from(media).where(inArray(media.id, mediaIds)).all()
+  return new Map(rows.map(r => [r.id, r.url]))
+}
+
+/**
+ * 景點小卡在 D1 裡只存 spotId／可選的覆寫欄位，前台需要的 slug／名稱／預設圖片／
+ * 預設介紹要在這裡補齊，這樣 TripDetail 回應本身就是自足的，前台不用再打一次 /api/spots。
+ */
+async function enrichDailyItineraryBlocks<T extends { type: string, data: unknown }>(db: DB, blocks: T[]): Promise<T[]> {
+  const spotIds = new Set<number>()
+  const imageMediaIds = new Set<number>()
+  for (const block of blocks) {
+    if (block.type !== 'daily_itinerary') continue
+    for (const item of (block.data as DailyItineraryBlockData).items) {
+      if (item.kind !== 'spotCard') continue
+      spotIds.add(item.spotId)
+      if (item.imageMediaId) imageMediaIds.add(item.imageMediaId)
+    }
+  }
+  if (spotIds.size === 0) return blocks
+
+  const [spotById, imageUrlById] = await Promise.all([
+    getSpotsByIds(db, [...spotIds]),
+    getMediaUrlsByIds(db, [...imageMediaIds])
+  ])
+  return blocks.map((block) => {
+    if (block.type !== 'daily_itinerary') return block
+    const data = block.data as DailyItineraryBlockData
+    return {
+      ...block,
+      data: {
+        items: data.items.map(item =>
+          item.kind === 'spotCard'
+            ? { ...item, spot: spotById.get(item.spotId), imageUrl: item.imageMediaId ? imageUrlById.get(item.imageMediaId) : undefined }
+            : item
+        )
+      }
+    }
   })
 }
 
@@ -338,8 +400,10 @@ export async function getTripSearchText(db: DB, tripId: number) {
       return stripHtml((block.data as { html: string }).html)
     }
     if (block.type === 'daily_itinerary') {
-      const data = block.data as { days: { title: string, html: string }[] }
-      return data.days.map(d => `${d.title} ${stripHtml(d.html)}`).join(' ')
+      const data = block.data as DailyItineraryBlockData
+      return data.items
+        .map(item => (item.kind === 'day' ? `${item.title} ${stripHtml(item.html)}` : ''))
+        .join(' ')
     }
     return ''
   }).join(' ')

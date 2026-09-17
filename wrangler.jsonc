@@ -29,5 +29,11 @@
   ],
   "images": {
     "binding": "IMAGES"
+  },
+  // 行程頁「下載 PDF」用。需要先在 Cloudflare Dashboard 開通 Browser Rendering
+  // （付費功能，依用量計費）才能在正式環境使用，本機 wrangler dev 無法模擬，
+  // 要測試得用 `wrangler dev --remote` 或直接對已部署的環境測。
+  "browser": {
+    "binding": "BROWSER"
   }
 }

@@ -41,6 +41,27 @@ function formatPrice(n: number | null) {
   return n ? `NT$ ${n.toLocaleString('zh-TW')} 起` : ''
 }
 
+const downloadingPdf = ref(false)
+async function downloadPdf() {
+  downloadingPdf.value = true
+  try {
+    const res = await fetch(`/api/trips/${props.trip.slug}/pdf`)
+    if (!res.ok) throw new Error('PDF 產生失敗')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${props.trip.slug}.pdf`
+    a.click()
+    // 立刻 revoke 在部分瀏覽器（Safari/Firefox）會讓下載被取消
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  } catch {
+    alert('PDF 產生失敗，請稍後再試')
+  } finally {
+    downloadingPdf.value = false
+  }
+}
+
 const bookingTrigger = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 onMounted(() => {
@@ -66,7 +87,7 @@ onBeforeUnmount(() => observer?.disconnect())
     >
       <div
         v-if="showBookingBar && barBatch"
-        class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-100 bg-white shadow-lg md:top-16 md:bottom-auto md:border-t-0 md:border-b"
+        class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-100 bg-white shadow-lg print:hidden md:top-16 md:bottom-auto md:border-t-0 md:border-b"
       >
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:px-6 lg:px-8">
           <p v-if="barBatch.priceFrom" class="shrink-0 text-base font-bold text-primary">
@@ -128,7 +149,20 @@ onBeforeUnmount(() => observer?.disconnect())
     </div>
 
     <div class="mx-auto max-w-[1200px] px-4 py-10 sm:px-6">
-      <AppBreadcrumb :items="crumbs" class="mb-6" />
+      <div class="mb-6 flex items-center justify-between gap-2">
+        <AppBreadcrumb :items="crumbs" />
+        <UButton
+          color="neutral"
+          variant="outline"
+          size="sm"
+          icon="i-lucide-download"
+          :loading="downloadingPdf"
+          class="print:hidden"
+          @click="downloadPdf"
+        >
+          下載 PDF
+        </UButton>
+      </div>
 
       <section class="relative">
         <div ref="bookingTrigger" class="pointer-events-none absolute inset-x-0" style="top: 80%" />
@@ -172,6 +206,7 @@ onBeforeUnmount(() => observer?.disconnect())
             block
             color="neutral"
             variant="ghost"
+            class="print:hidden"
             :trailing-icon="showAllBatches ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
             @click="showAllBatches = !showAllBatches"
           >
@@ -182,7 +217,7 @@ onBeforeUnmount(() => observer?.disconnect())
           目前尚無公開的出團日期
         </p>
 
-        <UButton :to="`/contact?trip=${trip.id}`" block color="primary" size="lg" class="mt-4">
+        <UButton :to="`/contact?trip=${trip.id}`" block color="primary" size="lg" class="mt-4 print:hidden">
           我要諮詢這個行程
         </UButton>
       </section>
@@ -195,7 +230,7 @@ onBeforeUnmount(() => observer?.disconnect())
         <TripContentBlocks :blocks="trip.blocks" />
 
         <div v-if="gallery.length" class="mt-10">
-          <h2 class="text-xl font-semibold text-gray-900">
+          <h2 class="text-xl font-semibold text-gray-900 print:break-after-avoid">
             行程相簿
           </h2>
           <UCarousel
@@ -203,11 +238,24 @@ onBeforeUnmount(() => observer?.disconnect())
             :items="gallery"
             arrows
             dots
-            class="mt-4"
+            class="mt-4 print:hidden"
             :ui="{ item: 'basis-1/2 sm:basis-1/3' }"
           >
             <AppImage :src="item.url" :alt="`${trip.title} 行程相簿照片`" sizes="(min-width: 640px) 400px, 50vw" loading="lazy" decoding="async" class="aspect-square w-full rounded-lg object-cover" />
           </UCarousel>
+          <!-- 輪播印出來只看得到前幾張、還會露出箭頭和圓點，PDF 改用格狀排出全部照片 -->
+          <div class="mt-4 hidden grid-cols-3 gap-3 print:grid">
+            <AppImage
+              v-for="photo in gallery"
+              :key="photo.id"
+              :src="photo.url"
+              :alt="`${trip.title} 行程相簿照片`"
+              sizes="300px"
+              loading="lazy"
+              decoding="async"
+              class="aspect-square w-full rounded-lg object-cover print:break-inside-avoid"
+            />
+          </div>
         </div>
       </article>
     </div>
