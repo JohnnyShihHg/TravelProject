@@ -29,7 +29,7 @@ defineProps<{ data: FlightBlockData }>()
             <span>{{ leg.arriveTime }}</span>
             <span class="text-base font-normal text-gray-400">{{ leg.toCode }} {{ leg.toName }}</span>
           </div>
-          <span class="text-base text-gray-400">飛行時間 {{ leg.duration }}</span>
+          <span v-if="leg.duration" class="text-base text-gray-400">飛行時間 {{ leg.duration }}</span>
         </div>
         <p v-if="!data.legs.length" class="text-sm text-gray-400">
           尚未設定航班資訊

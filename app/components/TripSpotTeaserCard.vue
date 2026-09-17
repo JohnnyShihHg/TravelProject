@@ -29,7 +29,7 @@ const text = computed(() => props.caption || props.spot?.description || '')
       v-if="image"
       :src="image"
       :alt="title"
-      sizes="(min-width: 768px) 700px, 100vw"
+      sizes="(min-width: 640px) 400px, 100vw"
       loading="lazy"
       decoding="async"
       class="absolute inset-0 size-full object-cover"

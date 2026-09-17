@@ -15,6 +15,16 @@ const crumbs = computed<Crumb[]>(() => {
 })
 
 const gallery = computed(() => props.trip.images.filter(i => !i.isCover))
+
+// 首圖上最多放 2 個景點標籤，超過就隨機抽。用 useState 讓伺服器抽一次、瀏覽器沿用同一組，
+// 不然兩邊各抽各的會 hydration mismatch
+const MAX_HERO_SPOTS = 2
+const heroSpotIds = useState(`trip-hero-spots-${props.trip.id}`, () => {
+  const ids = props.trip.spots.map(s => s.id)
+  if (ids.length <= MAX_HERO_SPOTS) return ids
+  return [...ids].sort(() => Math.random() - 0.5).slice(0, MAX_HERO_SPOTS)
+})
+const heroSpots = computed(() => props.trip.spots.filter(s => heroSpotIds.value.includes(s.id)))
 const flightBlock = computed(() => props.trip.blocks.find(b => b.type === 'flight'))
 
 const sortedBatches = computed(() => [...props.trip.batches].sort((a, b) => a.departureDate.localeCompare(b.departureDate)))
@@ -128,7 +138,7 @@ onBeforeUnmount(() => observer?.disconnect())
               {{ d.name }}
             </UBadge>
           </NuxtLink>
-          <NuxtLink v-for="s in trip.spots" :key="`s-${s.id}`" :to="`/spots/${s.slug}`">
+          <NuxtLink v-for="s in heroSpots" :key="`s-${s.id}`" :to="`/spots/${s.slug}`">
             <UBadge color="info" variant="solid" class="transition-opacity hover:opacity-85">
               {{ s.name }}
             </UBadge>
