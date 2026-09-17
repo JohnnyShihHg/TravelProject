@@ -111,7 +111,8 @@ onBeforeUnmount(() => observer?.disconnect())
     </Transition>
 
     <!-- hero 高度跟首頁 hero 一致 -->
-    <div class="relative min-h-[560px] overflow-hidden sm:min-h-[680px]">
+    <!-- PDF 裡壓成橫幅，不然首圖會吃掉整個第一頁。加 ! 是為了蓋過同樣會命中列印頁寬的 sm:min-h -->
+    <div class="relative min-h-[560px] overflow-hidden sm:min-h-[680px] print:h-[250px] print:min-h-0!">
       <AppImage v-if="trip.coverImageUrl" :src="trip.coverImageUrl" :alt="trip.title" sizes="100vw" fetchpriority="high" decoding="async" class="absolute inset-0 size-full object-cover" />
       <div class="absolute inset-0 bg-black/30" />
       <div class="absolute inset-x-0 bottom-0 mx-auto max-w-[1200px] px-4 pb-8 sm:px-6">

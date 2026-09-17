@@ -22,7 +22,7 @@ const text = computed(() => props.caption || props.spot?.description || '')
 <template>
   <div
     v-if="spot"
-    class="group relative aspect-[3/2] w-full cursor-pointer overflow-hidden rounded-xl shadow-sm print:break-inside-avoid"
+    class="group relative aspect-[3/2] w-full cursor-pointer overflow-hidden rounded-xl shadow-sm print:w-[200px] print:break-inside-avoid print:aspect-square!"
     @click="expanded = !expanded"
   >
     <AppImage

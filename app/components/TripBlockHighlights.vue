@@ -6,7 +6,7 @@ defineProps<{ data: RichTextBlockData }>()
 
 <template>
   <div>
-    <div class="mb-4 flex items-center justify-center gap-2 text-gray-900">
+    <div class="mb-4 flex items-center justify-center gap-2 text-gray-900 print:break-after-avoid">
       <UIcon name="i-lucide-sparkles" class="size-5 text-primary sm:size-6" />
       <span class="text-xl font-semibold sm:text-2xl">行程亮點</span>
     </div>

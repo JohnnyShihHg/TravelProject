@@ -6,11 +6,11 @@ defineProps<{ data: FlightBlockData }>()
 
 <template>
   <div>
-    <div class="mb-1 flex items-center justify-center gap-2 text-gray-900">
+    <div class="mb-1 flex items-center justify-center gap-2 text-gray-900 print:break-after-avoid">
       <UIcon name="i-lucide-plane" class="size-5 text-primary sm:size-6" />
       <span class="text-xl font-semibold sm:text-2xl">參考航班</span>
     </div>
-    <p class="mb-4 text-center text-sm text-gray-400">
+    <p class="mb-4 text-center text-sm text-gray-400 print:break-after-avoid">
       航班時間僅為參考，最終確定之使用航班以說明會資料為準
     </p>
 
